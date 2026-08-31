@@ -118,8 +118,8 @@ declare
   es_admin_inicial boolean;
 begin
   es_admin_inicial := new.email in (
-    'CORREO_DE_ENRIQUE_AQUI',
-    'CORREO_DE_JAVIER_AQUI'
+    'enrique@popinvestments.com',
+    'javier@popinvestments.com'
   );
   insert into public.equipo (id, nombre, email, rol)
   values (
@@ -252,3 +252,4 @@ insert into public.origenes (texto, orden) values
   ('Meta',1),('Google',2),('Portal inmobiliario',3),
   ('Br√≥ker externo',4),('Referido',5),('Caseta o visita espont√°nea',6),('Otro',7)
 on conflict do nothing;
+
