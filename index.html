@@ -128,7 +128,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 #auth-gate{max-width:380px;margin:14vh auto 0;text-align:center}
 #auth-gate h1{font-size:22px;margin-bottom:8px}
 #auth-gate p{color:var(--tinta-2);font-size:14px;margin-bottom:22px}
-#auth-gate input{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--linea-fuerte);border-radius:2px;margin-bottom:12px;text-align:center}
+#auth-gate input,#auth-gate select{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--linea-fuerte);border-radius:2px;margin-bottom:12px;text-align:center}
 #auth-msg{font-size:13px;margin-top:14px;min-height:18px}
 @media(max-width:900px){.form{grid-template-columns:1fr}.dos-col{grid-template-columns:1fr}body{padding:20px 16px 40px}}
 </style>
@@ -137,9 +137,9 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 
 <div id="auth-gate">
   <h1>QERCIA · tablero de negociaciones</h1>
-  <p>Entra con tu correo de POP. Te mandamos un link, sin contraseña.</p>
-  <input id="auth-email" type="email" placeholder="tu.correo@popinvestments.com" autocomplete="email">
-  <button class="btn" id="auth-send" style="width:100%">Enviar link mágico</button>
+  <p>Elige tu nombre para entrar. (Acceso de equipo, sin contraseña — se puede endurecer más adelante.)</p>
+  <select id="quien-select"><option value="">Selecciona tu nombre…</option></select>
+  <button class="btn" id="quien-entrar" style="width:100%">Entrar</button>
   <div id="auth-msg"></div>
 </div>
 
@@ -148,12 +148,12 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 <header>
   <div>
     <h1>QERCIA · tablero de negociaciones</h1>
-    <p class="sub">Nueve etapas de embudo y tres canchas. Cada quien ve lo suyo; Enrique y Javier ven todo el tablero.</p>
+    <p class="sub">Nueve etapas de embudo y tres canchas. Cada quien ve lo suyo; Enrique, Javier y Gaby ven todo el tablero.</p>
   </div>
   <div class="yo">
     <span id="yo-nombre">—</span><br>
     <span class="rolpill" id="yo-rol">…</span>
-    &nbsp; <button class="btn sec" id="b-salir" style="padding:4px 12px;font-size:12px">Salir</button>
+    &nbsp; <button class="btn sec" id="b-salir" style="padding:4px 12px;font-size:12px">Cambiar de usuario</button>
   </div>
 </header>
 
@@ -215,7 +215,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 </div>
 
 <div class="panel" id="p-ajustes" hidden>
-  <p class="txt">Solo Enrique y Javier pueden editar esto. Los cambios se reflejan para todo el equipo.</p>
+  <p class="txt">Pensado para que solo Enrique, Javier y Gaby lo editen. Por ahora no hay restricción técnica que lo impida (es acuerdo de equipo), pero los cambios se reflejan para todos al instante.</p>
   <h3>Motivos de pérdida</h3><div class="catlist" id="cat-motivos"></div>
   <div class="addrow"><input id="add-motivo" placeholder="Nuevo motivo…"><button class="btn sec" data-cat="motivos_perdida" data-input="add-motivo">Agregar</button></div>
   <h3>Formas de pago</h3><div class="catlist" id="cat-pago"></div>
@@ -252,7 +252,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 </div>
 <div>
 <h3>Visibilidad</h3>
-<p class="txt">Enrique y Javier ven y editan todas las negociaciones. Cada otro asesor ve y edita únicamente las suyas — esto lo aplica la base de datos, no solo la pantalla.</p>
+<p class="txt">Enrique, Javier y Gaby ven y editan todas las negociaciones. Cada otro asesor ve y edita únicamente las suyas. Por ahora esto es un filtro de pantalla y un acuerdo de equipo (no hay login individual), no un candado de base de datos — se puede endurecer más adelante si hace falta.</p>
 </div>
 </div>
 </div>
@@ -288,41 +288,48 @@ function lote(clave){ return LOTES.find(x => x.clave === clave) || null; }
 function eqById(id){ return EQUIPO.find(x => x.id === id) || null; }
 function esAdmin(){ return ME && ME.rol === "admin"; }
 
-// ---------- auth ----------
-document.getElementById("auth-send").addEventListener("click", async function(){
-  const email = document.getElementById("auth-email").value.trim();
-  const msg = document.getElementById("auth-msg");
-  if (!email) { msg.style.color = "var(--nuestra)"; msg.textContent = "Escribe tu correo"; return; }
-  msg.style.color = "var(--tinta-2)"; msg.textContent = "Enviando…";
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
-  if (error) { msg.style.color = "var(--nuestra)"; msg.textContent = "No se pudo enviar: " + error.message; return; }
-  msg.style.color = "var(--verde)"; msg.textContent = "Revisa tu correo — te mandamos un link para entrar.";
-});
-document.getElementById("b-salir").addEventListener("click", async function(){ await sb.auth.signOut(); location.reload(); });
+// ---------- selector de usuario ----------
+// Nota: por ahora no hay login real (sin correo, sin contraseña). Cada quien
+// elige su nombre de una lista y el navegador lo recuerda. Es un acuerdo de
+// equipo, no un candado de servidor — se puede endurecer más adelante.
+const LS_KEY = "qercia_quien_id";
 
-sb.auth.onAuthStateChange(function(event, session){
-  if (session) { arrancar(); } else { document.getElementById("auth-gate").hidden = false; document.getElementById("app").hidden = true; }
+document.getElementById("b-salir").addEventListener("click", function(){
+  localStorage.removeItem(LS_KEY);
+  location.reload();
 });
+
+document.getElementById("quien-entrar").addEventListener("click", function(){
+  const id = document.getElementById("quien-select").value;
+  const msg = document.getElementById("auth-msg");
+  if (!id) { msg.style.color = "var(--nuestra)"; msg.textContent = "Elige tu nombre de la lista"; return; }
+  localStorage.setItem(LS_KEY, id);
+  arrancar();
+});
+
+async function poblarSelectorQuien(){
+  const { data, error } = await sb.from("equipo").select("*").eq("activo", true).order("nombre");
+  const msg = document.getElementById("auth-msg");
+  if (error) {
+    msg.style.color = "var(--nuestra)";
+    msg.textContent = "No se pudo cargar el equipo: " + error.message + " (¿ya corriste supabase/schema.sql en el SQL Editor?)";
+    return;
+  }
+  msg.textContent = "";
+  EQUIPO = data || [];
+  document.getElementById("quien-select").innerHTML = '<option value="">Selecciona tu nombre…</option>' +
+    EQUIPO.map(a => '<option value="' + a.id + '">' + a.nombre + '</option>').join("");
+}
 
 async function arrancar(){
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return;
+  const guardado = localStorage.getItem(LS_KEY);
+  if (!EQUIPO.length) await poblarSelectorQuien();
 
-  const msg = document.getElementById("auth-msg");
-  msg.style.color = "var(--tinta-2)"; msg.textContent = "Entrando…";
-
-  // el trigger crea la fila de equipo al vuelo; puede tardar un instante la primera vez
-  let miEquipo = null, ultimoError = null;
-  for (let i = 0; i < 6 && !miEquipo; i++){
-    const { data, error } = await sb.from("equipo").select("*").eq("id", session.user.id).maybeSingle();
-    miEquipo = data; ultimoError = error;
-    if (!miEquipo) await new Promise(r => setTimeout(r, 500));
-  }
+  const miEquipo = guardado ? EQUIPO.find(x => x.id === guardado) : null;
   if (!miEquipo) {
-    msg.style.color = "var(--nuestra)";
-    msg.textContent = ultimoError
-      ? "No se pudo cargar tu perfil: " + ultimoError.message + " (¿ya corriste supabase/schema.sql en el SQL Editor?)"
-      : "No se pudo crear tu perfil, intenta recargar.";
+    if (guardado) localStorage.removeItem(LS_KEY);
+    document.getElementById("auth-gate").hidden = false;
+    document.getElementById("app").hidden = true;
     return;
   }
   ME = miEquipo;
@@ -681,10 +688,7 @@ document.getElementById("p-ajustes").addEventListener("change", async function(e
 });
 
 // ---------- arranque ----------
-(async function(){
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) await arrancar();
-})();
+arrancar();
 </script>
 </body>
 </html>
