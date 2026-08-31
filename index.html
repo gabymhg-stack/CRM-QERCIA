@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QERCIA · Tablero de negociaciones</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --tinta:#1C1A17; --tinta-2:#5A554D; --tinta-3:#8B857A;
+  --papel:#F7F5F0; --papel-2:#FFFFFF;
+  --linea:#DCD7CC; --linea-fuerte:#B8B1A2;
+  --nuestra:#B03A22; --nuestra-bg:#FBEDE8;
+  --cliente:#6E6A62; --cliente-bg:#EEEBE4;
+  --tercero:#4B3F86; --tercero-bg:#EEEBF7;
+  --verde:#3B6D11; --verde-bg:#EDF4E2; --ambar:#8A5A0B;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--papel);color:var(--tinta);font-family:"Söhne","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;line-height:1.55;padding:30px 26px 64px}
+.wrap{max-width:1560px;margin:0 auto}
+header{border-bottom:2px solid var(--tinta);padding-bottom:16px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
+.sub{color:var(--tinta-2);font-size:14px;margin-top:5px;max-width:74ch}
+.yo{font-size:13px;color:var(--tinta-2);text-align:right}
+.yo b{color:var(--tinta);font-weight:500}
+.yo .rolpill{display:inline-block;margin-top:3px;font-size:10.5px;padding:2px 7px;border-radius:2px;background:var(--nuestra-bg);color:var(--nuestra)}
+.tabs{display:flex;border-bottom:1px solid var(--linea-fuerte);margin:22px 0 22px}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:11px 0 9px;margin-right:26px;font-family:inherit;font-size:15px;color:var(--tinta-3);cursor:pointer}
+.tab[aria-selected="true"]{color:var(--tinta);border-bottom-color:var(--tinta)}
+.panel[hidden]{display:none}
+.aviso{background:#FDF6E3;border-left:3px solid var(--ambar);padding:11px 15px;margin:0 0 22px;font-size:13.5px;color:#5C3D06;max-width:100ch}
+.barra{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-end;margin-bottom:18px}
+.filtro-t{font-size:12px;color:var(--tinta-3);margin-bottom:7px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--linea-fuerte);background:transparent;color:var(--tinta-2);padding:5px 12px;font-size:13px;cursor:pointer;font-family:inherit;border-radius:2px}
+.chip[aria-pressed="true"]{background:var(--tinta);border-color:var(--tinta);color:var(--papel)}
+.metricas{display:flex;border:1px solid var(--linea);background:var(--papel-2);margin-bottom:24px;flex-wrap:wrap}
+.met{flex:1;min-width:130px;padding:12px 16px;border-right:1px solid var(--linea)}
+.met:last-child{border-right:none}
+.met .n{font-size:22px;font-weight:500;letter-spacing:-0.02em;line-height:1.1}
+.met .l{font-size:11.5px;color:var(--tinta-3);margin-top:3px;line-height:1.35}
+.met.alerta .n{color:var(--nuestra)}
+.scroller{overflow-x:auto;padding-bottom:8px}
+.board{display:grid;grid-template-columns:repeat(9,minmax(168px,1fr));gap:9px;align-items:start;min-width:1560px}
+.col-h{padding-bottom:7px;border-bottom:1px solid var(--linea-fuerte);margin-bottom:10px}
+.col-h .nom{font-size:13px;font-weight:500}
+.col-h .meta{font-size:11px;color:var(--tinta-3);margin-top:2px;line-height:1.35;min-height:29px}
+.col.admin .col-h{border-bottom-style:dashed}
+.card{background:var(--papel-2);border:1px solid var(--linea);border-left:6px solid var(--tinta-3);padding:8px 9px;margin-bottom:7px;cursor:pointer;position:relative}
+.card:hover{border-color:var(--linea-fuerte)}
+.nombre{font-size:12.5px;font-weight:500;line-height:1.32}
+.unidad{font-size:11.5px;color:var(--tinta-2);margin-top:3px}
+.unidad.sin{color:var(--tinta-3);font-style:italic}
+.linea2{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.duenio{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--tinta-2);margin-top:5px}
+.punto{width:9px;height:9px;border-radius:50%;flex:none}
+.pill{font-size:10px;padding:1px 5px;border-radius:2px;white-space:nowrap}
+.p-nuestra{background:var(--nuestra-bg);color:var(--nuestra)}
+.p-cliente{background:var(--cliente-bg);color:var(--cliente)}
+.p-tercero{background:var(--tercero-bg);color:var(--tercero)}
+.p-viejo{background:var(--nuestra-bg);color:var(--nuestra);font-weight:500}
+.p-ok{background:var(--verde-bg);color:var(--verde)}
+.vacio{font-size:11.5px;color:var(--tinta-3);font-style:italic;padding:5px 0}
+.leyenda{display:flex;flex-wrap:wrap;gap:20px;margin-top:22px;padding-top:14px;border-top:1px solid var(--linea);font-size:13px;color:var(--tinta-2)}
+.sw{width:13px;height:13px;border-radius:3px;flex:none;display:inline-block}
+.leyenda span{display:flex;align-items:center;gap:7px}
+.form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 20px;max-width:1020px}
+.f{display:flex;flex-direction:column}
+.f label{font-size:12px;color:var(--tinta-3);margin-bottom:5px}
+.f label .req{color:var(--nuestra)}
+.f input,.f select,.f textarea{font-family:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--linea-fuerte);background:var(--papel-2);color:var(--tinta);border-radius:2px;width:100%}
+.f textarea{resize:vertical;min-height:58px}
+.hint{font-size:11.5px;color:var(--tinta-3);margin-top:4px;line-height:1.4}
+.err{font-size:12px;color:var(--nuestra);margin-top:4px}
+.acciones{display:flex;gap:10px;align-items:center;margin-top:24px;flex-wrap:wrap}
+.btn{font-family:inherit;font-size:14px;padding:9px 20px;border:1px solid var(--tinta);background:var(--tinta);color:var(--papel);cursor:pointer;border-radius:2px}
+.btn.sec{background:transparent;color:var(--tinta)}
+.btn.danger{background:transparent;color:var(--nuestra);border-color:var(--nuestra)}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.5;cursor:default}
+.ok{font-size:13px;color:var(--verde)}
+h2{font-size:19px;font-weight:500;margin-bottom:13px;letter-spacing:-0.01em}
+h3{font-size:15px;font-weight:500;margin:28px 0 9px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:500;color:var(--tinta-3);font-size:12px;padding:0 12px 7px 0;border-bottom:1px solid var(--linea-fuerte)}
+td{padding:9px 12px 9px 0;border-bottom:1px solid var(--linea);vertical-align:top}
+td.k{font-weight:500;white-space:nowrap}
+.mini{font-size:11.5px;color:var(--tinta-3)}
+.del{background:none;border:none;color:var(--nuestra);cursor:pointer;font-family:inherit;font-size:12px;padding:0}
+p.txt{font-size:14px;color:var(--tinta-2);margin-bottom:10px;max-width:62ch}
+ol.reglas{margin:0 0 0 18px}
+ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
+.dos-col{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:8px}
+.ovl{position:fixed;inset:0;background:rgba(28,26,23,.42);display:flex;align-items:flex-start;justify-content:center;padding:36px 18px;overflow-y:auto;z-index:50}
+.ovl[hidden]{display:none}
+.modal{background:var(--papel);border:1px solid var(--linea-fuerte);max-width:660px;width:100%;padding:22px 24px 26px;border-radius:3px}
+.mhead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:1px solid var(--linea-fuerte);padding-bottom:12px;margin-bottom:16px}
+.mhead .n{font-size:18px;font-weight:500;line-height:1.25}
+.mhead .s{font-size:13px;color:var(--tinta-2);margin-top:3px}
+.cerrar{background:none;border:none;font-size:22px;line-height:1;color:var(--tinta-3);cursor:pointer;font-family:inherit}
+.bit{border-left:2px solid var(--linea-fuerte);padding-left:13px;margin-top:6px}
+.bit .e{padding:8px 0;border-bottom:1px dotted var(--linea);font-size:13px}
+.bit .f{font-size:11.5px;color:var(--tinta-3);display:block}
+.mform{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:6px}
+.mform .full{grid-column:span 2}
+.mform label{font-size:12px;color:var(--tinta-3);display:block;margin-bottom:4px}
+.mform input,.mform select,.mform textarea{font-family:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--linea-fuerte);background:var(--papel-2);color:var(--tinta);width:100%;border-radius:2px}
+.mform textarea{min-height:54px;resize:vertical}
+.motivos{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:4px}
+.motivos label{display:flex;align-items:flex-start;gap:7px;font-size:13.5px;color:var(--tinta);cursor:pointer;padding:3px 0}
+.barras .b{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:13.5px}
+.barras .et{width:210px;flex:none}
+.barras .bar{height:13px;background:var(--nuestra);border-radius:2px;min-width:2px}
+.barras .c{font-size:12.5px;color:var(--tinta-3)}
+.perd{border:1px solid var(--linea);border-left:3px solid var(--nuestra);background:var(--papel-2);padding:10px 12px;margin-bottom:8px}
+.perd .t{font-size:13.5px;font-weight:500}
+.perd .m{font-size:12px;color:var(--tinta-2);margin-top:3px}
+.catlist{max-width:520px}
+.catrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--linea);font-size:14px}
+.catrow input[type=text]{flex:1;border:1px solid transparent;background:transparent;font-family:inherit;font-size:14px;padding:3px 5px;border-radius:2px}
+.catrow input[type=text]:focus{border-color:var(--linea-fuerte);background:var(--papel-2);outline:none}
+.catrow.inactivo{opacity:.4}
+.addrow{display:flex;gap:8px;margin-top:12px;max-width:520px}
+.addrow input{flex:1}
+.eqrow{display:grid;grid-template-columns:28px 1fr 1fr 140px 90px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
+.eqrow select,.eqrow input{font-family:inherit;font-size:13px;padding:5px 7px;border:1px solid var(--linea-fuerte);border-radius:2px;background:var(--papel-2)}
+#auth-gate{max-width:380px;margin:14vh auto 0;text-align:center}
+#auth-gate h1{font-size:22px;margin-bottom:8px}
+#auth-gate p{color:var(--tinta-2);font-size:14px;margin-bottom:22px}
+#auth-gate input{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--linea-fuerte);border-radius:2px;margin-bottom:12px;text-align:center}
+#auth-msg{font-size:13px;margin-top:14px;min-height:18px}
+@media(max-width:900px){.form{grid-template-columns:1fr}.dos-col{grid-template-columns:1fr}body{padding:20px 16px 40px}}
+</style>
+</head>
+<body>
+
+<div id="auth-gate">
+  <h1>QERCIA · tablero de negociaciones</h1>
+  <p>Entra con tu correo de POP. Te mandamos un link, sin contraseña.</p>
+  <input id="auth-email" type="email" placeholder="tu.correo@popinvestments.com" autocomplete="email">
+  <button class="btn" id="auth-send" style="width:100%">Enviar link mágico</button>
+  <div id="auth-msg"></div>
+</div>
+
+<div class="wrap" id="app" hidden>
+
+<header>
+  <div>
+    <h1>QERCIA · tablero de negociaciones</h1>
+    <p class="sub">Nueve etapas de embudo y tres canchas. Cada quien ve lo suyo; Enrique y Javier ven todo el tablero.</p>
+  </div>
+  <div class="yo">
+    <span id="yo-nombre">—</span><br>
+    <span class="rolpill" id="yo-rol">…</span>
+    &nbsp; <button class="btn sec" id="b-salir" style="padding:4px 12px;font-size:12px">Salir</button>
+  </div>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-p="p-tablero">Tablero</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-captura">Captura</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-perdidas">Perdidas</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-ajustes" id="tab-ajustes" hidden>Ajustes</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-doc">Vocabulario y reglas</button>
+</div>
+
+<div class="panel" id="p-tablero">
+  <div class="barra">
+    <div><div class="filtro-t">Ver por cancha</div><div class="chips" id="f-cancha">
+      <button class="chip" aria-pressed="true" data-v="todas">Todas</button>
+      <button class="chip" aria-pressed="false" data-v="nuestra">Nuestra</button>
+      <button class="chip" aria-pressed="false" data-v="cliente">Del cliente</button>
+      <button class="chip" aria-pressed="false" data-v="tercero">De tercero</button></div></div>
+    <div id="w-verquien" hidden><div class="filtro-t">Ver</div><div class="chips" id="f-verquien">
+      <button class="chip" aria-pressed="true" data-v="todas">Todo el equipo</button>
+      <button class="chip" aria-pressed="false" data-v="mias">Solo mías</button></div></div>
+  </div>
+  <div class="metricas" id="metricas"></div>
+  <div class="scroller"><div class="board" id="board"></div></div>
+  <div class="leyenda">
+    <span><i class="sw" style="background:var(--nuestra)"></i>Cancha nuestra — el siguiente paso lo debemos nosotros</span>
+    <span><i class="sw" style="background:var(--cliente)"></i>Cancha del cliente — esperamos su respuesta</span>
+    <span><i class="sw" style="background:var(--tercero)"></i>Cancha de tercero — notaría, banco o la propiedad</span>
+  </div>
+  <div class="leyenda" id="leyenda-eq"></div>
+</div>
+
+<div class="panel" id="p-captura" hidden>
+  <div class="form" id="form-captura">
+    <div class="f"><label>Nombre completo del cliente <span class="req">*</span></label><input id="c-cliente"><div class="err" id="e-cliente" hidden>Escribe el nombre completo</div></div>
+    <div class="f"><label>Teléfono</label><input id="c-tel"></div>
+    <div class="f"><label>Origen</label><select id="c-origen"></select></div>
+    <div class="f" id="w-duenio" hidden><label>Asesor dueño <span class="req">*</span></label><select id="c-asesor"></select></div>
+    <div class="f"><label>Lote</label><select id="c-lote"><option value="">Sin definir</option></select><div class="err" id="e-lote" hidden>De cotización en adelante hace falta el lote</div></div>
+    <div class="f"><label>Forma de pago</label><select id="c-pago"></select></div>
+    <div class="f"><label>Etapa</label><select id="c-etapa"></select></div>
+    <div class="f"><label>Cancha</label><select id="c-cancha"><option value="nuestra">Nuestra</option><option value="cliente">Del cliente</option><option value="tercero">De tercero</option></select></div>
+    <div class="f"><label>Último contacto nuestro</label><input type="date" id="c-fcontacto"></div>
+    <div class="f wide" style="grid-column:span 3"><label>Siguiente paso <span class="req">*</span></label><input id="c-paso"><div class="hint">Si no puedes escribir el siguiente paso, la negociación no está calificada.</div><div class="err" id="e-paso" hidden>Escribe cuál es el siguiente paso</div></div>
+    <div class="f"><label>Comprometido para</label><input type="date" id="c-fpaso"></div>
+    <div class="f" style="grid-column:span 2"><label>Acuerdos y pendientes</label><textarea id="c-notas"></textarea></div>
+  </div>
+  <div class="acciones">
+    <button class="btn" id="b-guardar">Guardar negociación</button>
+    <span class="ok" id="msg"></span>
+  </div>
+</div>
+
+<div class="panel" id="p-perdidas" hidden>
+  <p class="txt">Cada perdida conserva la etapa donde murió y el motivo.</p>
+  <h3>Por motivo</h3><div class="barras" id="g-motivo"></div>
+  <h3>Por etapa donde murió</h3><div class="barras" id="g-etapa"></div>
+  <h3>Detalle</h3><div id="l-perdidas"></div>
+</div>
+
+<div class="panel" id="p-ajustes" hidden>
+  <p class="txt">Solo Enrique y Javier pueden editar esto. Los cambios se reflejan para todo el equipo.</p>
+  <h3>Motivos de pérdida</h3><div class="catlist" id="cat-motivos"></div>
+  <div class="addrow"><input id="add-motivo" placeholder="Nuevo motivo…"><button class="btn sec" data-cat="motivos_perdida" data-input="add-motivo">Agregar</button></div>
+  <h3>Formas de pago</h3><div class="catlist" id="cat-pago"></div>
+  <div class="addrow"><input id="add-pago" placeholder="Nueva forma de pago…"><button class="btn sec" data-cat="formas_pago" data-input="add-pago">Agregar</button></div>
+  <h3>Orígenes</h3><div class="catlist" id="cat-origenes"></div>
+  <div class="addrow"><input id="add-origen" placeholder="Nuevo origen…"><button class="btn sec" data-cat="origenes" data-input="add-origen">Agregar</button></div>
+  <h3>Equipo</h3>
+  <div id="eq-list"></div>
+  <p class="hint" style="margin-top:8px">Rol "admin" = ve y edita todo el tablero. Rol "asesor" = solo ve y edita lo propio.</p>
+</div>
+
+<div class="panel" id="p-doc" hidden>
+<h2>Los dos ejes</h2>
+<p class="txt">La etapa dice dónde está la negociación en el embudo. La cancha dice quién debe el siguiente paso.</p>
+<h3>Vocabulario</h3>
+<table>
+<tr><th style="width:150px">Término</th><th>Definición operativa</th></tr>
+<tr><td class="k">Negociación</td><td>Un cliente por un lote. Es la unidad del tablero.</td></tr>
+<tr><td class="k">Cancha</td><td>Quién debe el siguiente paso: nuestra, del cliente, de tercero.</td></tr>
+<tr><td class="k">Aging</td><td>Días desde el último cambio de etapa.</td></tr>
+<tr><td class="k">Sin contacto</td><td>Días desde que <b style="font-weight:500">nosotros</b> lo tocamos por última vez.</td></tr>
+<tr><td class="k">Sin respuesta</td><td>Días desde que <b style="font-weight:500">él</b> nos contestó por última vez.</td></tr>
+<tr><td class="k">Dueño</td><td>Un solo nombre por tarjeta. Sin dueño la tarjeta no existe.</td></tr>
+</table>
+<div class="dos-col">
+<div>
+<h3>Reglas del tablero</h3>
+<ol class="reglas">
+<li>Sin dueño no hay tarjeta.</li>
+<li>La alerta principal es la cancha, no el aging.</li>
+<li>Aging alto en cancha de tercero no pinta rojo.</li>
+<li>De cotización en adelante el lote es obligatorio.</li>
+</ol>
+</div>
+<div>
+<h3>Visibilidad</h3>
+<p class="txt">Enrique y Javier ven y editan todas las negociaciones. Cada otro asesor ve y edita únicamente las suyas — esto lo aplica la base de datos, no solo la pantalla.</p>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="ovl" id="ovl" hidden>
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="n" id="m-nombre"></div><div class="s" id="m-sub"></div></div>
+      <button class="cerrar" id="m-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="m-cuerpo"></div>
+  </div>
+</div>
+
+<script>
+const CFG = window.QERCIA_CONFIG;
+const sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+const mxn = new Intl.NumberFormat("es-MX", {maximumFractionDigits:0});
+const ADMIN_ETAPA = 7;
+const LBL = {nuestra:"Cancha nuestra", cliente:"Cancha del cliente", tercero:"Cancha de tercero"};
+const COLORES_DEFAULT = ["#F26B0A","#1B3FE0","#A01236","#26D2F5","#3ECC1E","#B07CF0","#8A5A0B","#3B6D11"];
+
+let ME = null;               // {id,nombre,email,color,rol}
+let ETAPAS = [], MOTIVOS = [], FORMAS_PAGO = [], ORIGENES = [], LOTES = [], EQUIPO = [];
+let NEGS = [];
+let fCancha = "todas", verQuien = "todas";
+
+function hoy(){ return new Date().toISOString().slice(0,10); }
+function dias(f){ if(!f) return 0; return Math.max(0, Math.round((Date.now() - new Date(f + "T12:00:00")) / 86400000)); }
+function lote(clave){ return LOTES.find(x => x.clave === clave) || null; }
+function eqById(id){ return EQUIPO.find(x => x.id === id) || null; }
+function esAdmin(){ return ME && ME.rol === "admin"; }
+
+// ---------- auth ----------
+document.getElementById("auth-send").addEventListener("click", async function(){
+  const email = document.getElementById("auth-email").value.trim();
+  const msg = document.getElementById("auth-msg");
+  if (!email) { msg.style.color = "var(--nuestra)"; msg.textContent = "Escribe tu correo"; return; }
+  msg.style.color = "var(--tinta-2)"; msg.textContent = "Enviando…";
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+  if (error) { msg.style.color = "var(--nuestra)"; msg.textContent = "No se pudo enviar: " + error.message; return; }
+  msg.style.color = "var(--verde)"; msg.textContent = "Revisa tu correo — te mandamos un link para entrar.";
+});
+document.getElementById("b-salir").addEventListener("click", async function(){ await sb.auth.signOut(); location.reload(); });
+
+sb.auth.onAuthStateChange(function(event, session){
+  if (session) { arrancar(); } else { document.getElementById("auth-gate").hidden = false; document.getElementById("app").hidden = true; }
+});
+
+async function arrancar(){
+  document.getElementById("auth-gate").hidden = true;
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+
+  // el trigger crea la fila de equipo al vuelo; puede tardar un instante la primera vez
+  let miEquipo = null;
+  for (let i = 0; i < 6 && !miEquipo; i++){
+    const { data } = await sb.from("equipo").select("*").eq("id", session.user.id).maybeSingle();
+    miEquipo = data;
+    if (!miEquipo) await new Promise(r => setTimeout(r, 500));
+  }
+  if (!miEquipo) { document.getElementById("auth-msg").textContent = "No se pudo crear tu perfil, intenta recargar."; return; }
+  ME = miEquipo;
+
+  document.getElementById("app").hidden = false;
+  document.getElementById("yo-nombre").textContent = ME.nombre;
+  document.getElementById("yo-rol").textContent = esAdmin() ? "Ve todo el tablero" : "Ve solo lo suyo";
+  document.getElementById("w-verquien").hidden = !esAdmin();
+  document.getElementById("w-duenio").hidden = !esAdmin();
+  document.getElementById("tab-ajustes").hidden = !esAdmin();
+
+  await cargarCatalogos();
+  await cargarNegociaciones();
+  render();
+  suscribirRealtime();
+}
+
+async function cargarCatalogos(){
+  const [e, m, fp, o, l, eq] = await Promise.all([
+    sb.from("etapas").select("*").order("orden"),
+    sb.from("motivos_perdida").select("*").order("orden"),
+    sb.from("formas_pago").select("*").order("orden"),
+    sb.from("origenes").select("*").order("orden"),
+    sb.from("lotes").select("*").order("clave"),
+    sb.from("equipo").select("*").order("nombre"),
+  ]);
+  ETAPAS = e.data || []; MOTIVOS = m.data || []; FORMAS_PAGO = fp.data || [];
+  ORIGENES = o.data || []; LOTES = l.data || []; EQUIPO = eq.data || [];
+
+  const selE = document.getElementById("c-etapa"); selE.innerHTML = "";
+  ETAPAS.filter(x => x.id < ADMIN_ETAPA).forEach(function(et){
+    const o = document.createElement("option"); o.value = et.id; o.textContent = (et.id+1) + " · " + et.nombre; selE.appendChild(o);
+  });
+  const selO = document.getElementById("c-origen"); selO.innerHTML = "";
+  ORIGENES.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.texto; o.textContent=x.texto; selO.appendChild(o); });
+  const selP = document.getElementById("c-pago"); selP.innerHTML = "";
+  FORMAS_PAGO.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.texto; o.textContent=x.texto; selP.appendChild(o); });
+  const selL = document.getElementById("c-lote");
+  LOTES.forEach(function(x){ const o=document.createElement("option"); o.value=x.clave; o.textContent=x.clave+" · "+(x.tipologia||"-")+" · "+(x.m2||"?")+" m²"; selL.appendChild(o); });
+  if (esAdmin()){
+    const selA = document.getElementById("c-asesor"); selA.innerHTML = "";
+    EQUIPO.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.id; o.textContent=x.nombre; selA.appendChild(o); });
+  }
+  document.getElementById("c-fcontacto").value = hoy();
+
+  document.getElementById("leyenda-eq").innerHTML = EQUIPO.map(function(a){
+    return '<span><i class="sw" style="background:'+a.color+'"></i>'+a.nombre+'</span>';
+  }).join("");
+}
+
+async function cargarNegociaciones(){
+  const { data, error } = await sb.from("negociaciones").select("*").order("creado_en", {ascending:false});
+  if (error) { console.error(error); NEGS = []; return; }
+  NEGS = data || [];
+}
+
+function suscribirRealtime(){
+  sb.channel("negs-live")
+    .on("postgres_changes", {event:"*", schema:"public", table:"negociaciones"}, async function(){ await cargarNegociaciones(); render(); if(!document.getElementById("p-perdidas").hidden) perdidas(); })
+    .on("postgres_changes", {event:"*", schema:"public", table:"equipo"}, async function(){ await cargarCatalogos(); render(); })
+    .subscribe();
+}
+
+// ---------- tabs ----------
+document.querySelector(".tabs").addEventListener("click", function(e){
+  const t = e.target.closest(".tab"); if (!t) return;
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+  document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== t.dataset.p);
+  if (t.dataset.p === "p-perdidas") perdidas();
+  if (t.dataset.p === "p-ajustes") pintarAjustes();
+});
+
+function grupo(id, set){
+  document.getElementById(id).addEventListener("click", function(e){
+    const b = e.target.closest(".chip"); if (!b) return;
+    Array.from(e.currentTarget.children).forEach(x => x.setAttribute("aria-pressed", x === b));
+    set(b.dataset.v); render();
+  });
+}
+grupo("f-cancha", v => fCancha = v);
+grupo("f-verquien", v => verQuien = v);
+
+// ---------- tablero ----------
+function visibles(){
+  let v = NEGS.filter(n => !n.perdida);
+  if (verQuien === "mias") v = v.filter(n => n.asesor_id === ME.id);
+  if (fCancha !== "todas") v = v.filter(n => n.cancha === fCancha);
+  return v;
+}
+
+function tarjeta(n){
+  const eq = eqById(n.asesor_id);
+  const col = eq ? eq.color : "#A9A296";
+  const l = n.lote_clave ? lote(n.lote_clave) : null;
+  const unidad = l
+    ? '<div class="unidad">' + n.lote_clave + ' <span style="color:var(--tinta-3)">· ' + (l.tipologia||"-") + ' · ' + mxn.format(l.m2||0) + ' m²</span></div>'
+    : '<div class="unidad sin">Sin lote · ' + (n.origen || "origen sin registrar") + '</div>';
+  const c = dias(n.fecha_ultimo_contacto), r = n.fecha_ultima_respuesta ? dias(n.fecha_ultima_respuesta) : null;
+  const reloj = n.cancha === "cliente" && r !== null ? r + ' d sin respuesta' : c + ' d sin contacto';
+  const viejo = c >= 8 && n.cancha === "nuestra";
+  return '<div class="card" data-id="' + n.id + '" style="border-left-color:' + col + '">' +
+    '<div class="nombre">' + n.cliente + '</div>' + unidad +
+    '<div class="linea2"><span class="pill p-' + n.cancha + '">' + LBL[n.cancha] + '</span>' +
+    '<span class="pill ' + (viejo ? "p-viejo" : "p-ok") + '">' + reloj + '</span></div>' +
+    '<div class="duenio"><i class="punto" style="background:' + col + '"></i>' + (eq?eq.nombre:"—") + ' · ' + dias(n.creado_en.slice(0,10)) + ' d</div></div>';
+}
+
+function render(){
+  const v = visibles();
+  document.getElementById("board").innerHTML = ETAPAS.map(function(et){
+    const items = v.filter(n => n.etapa === et.id);
+    return '<div class="col' + (et.id >= ADMIN_ETAPA ? " admin" : "") + '" data-i="' + et.id + '">' +
+      '<div class="col-h"><div class="nom">' + et.nombre + ' <span style="color:var(--tinta-3);font-weight:400">' + items.length + '</span></div>' +
+      '<div class="meta">' + et.meta + '</div></div>' +
+      (items.length ? items.map(tarjeta).join("") : '<div class="vacio">Vacía</div>') + '</div>';
+  }).join("");
+
+  const com = v.filter(n => n.etapa < ADMIN_ETAPA);
+  const nuestra = com.filter(n => n.cancha === "nuestra").length;
+  const pct = com.length ? Math.round(nuestra / com.length * 100) : 0;
+  const est = v.filter(n => dias(n.fecha_ultimo_contacto) >= 8 && n.cancha === "nuestra").length;
+  const sep = v.filter(n => n.etapa >= 6).length;
+  document.getElementById("metricas").innerHTML =
+    '<div class="met"><div class="n">' + v.length + '</div><div class="l">Negociaciones vivas</div></div>' +
+    '<div class="met' + (pct > 50 ? " alerta" : "") + '"><div class="n">' + pct + '%</div><div class="l">Del embudo en cancha nuestra</div></div>' +
+    '<div class="met"><div class="n">' + est + '</div><div class="l">Ocho días o más paradas en cancha nuestra</div></div>' +
+    '<div class="met"><div class="n">' + sep + '</div><div class="l">De separación en adelante</div></div>';
+}
+
+document.getElementById("board").addEventListener("click", function(e){
+  const c = e.target.closest(".card"); if (!c) return;
+  abrir(c.dataset.id, null);
+});
+
+// ---------- captura ----------
+document.getElementById("b-guardar").addEventListener("click", async function(){
+  const cliente = document.getElementById("c-cliente").value.trim();
+  const paso = document.getElementById("c-paso").value.trim();
+  const etapa = +document.getElementById("c-etapa").value;
+  const loteVal = document.getElementById("c-lote").value;
+  const faltaLote = etapa >= 4 && !loteVal;
+  document.getElementById("e-cliente").hidden = !!cliente;
+  document.getElementById("e-paso").hidden = !!paso;
+  document.getElementById("e-lote").hidden = !faltaLote;
+  if (!cliente || !paso || faltaLote) return;
+
+  const asesorId = esAdmin() ? document.getElementById("c-asesor").value : ME.id;
+  const row = {
+    cliente, telefono: document.getElementById("c-tel").value.trim(),
+    origen: document.getElementById("c-origen").value,
+    asesor_id: asesorId,
+    lote_clave: loteVal || null,
+    forma_pago: document.getElementById("c-pago").value,
+    etapa, cancha: document.getElementById("c-cancha").value,
+    fecha_ultimo_contacto: document.getElementById("c-fcontacto").value || null,
+    siguiente_paso: paso,
+    fecha_compromiso: document.getElementById("c-fpaso").value || null,
+    notas: document.getElementById("c-notas").value.trim(),
+  };
+  const { data, error } = await sb.from("negociaciones").insert(row).select().single();
+  const msg = document.getElementById("msg");
+  if (error) { msg.style.color = "var(--nuestra)"; msg.textContent = "Error: " + error.message; return; }
+  await sb.from("bitacora").insert({ negociacion_id: data.id, texto: "Alta de la negociación", etapa, cancha: row.cancha });
+  msg.style.color = "var(--verde)"; msg.textContent = "Guardada"; setTimeout(()=>msg.textContent="", 2200);
+  ["c-cliente","c-tel","c-paso","c-notas"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("c-lote").value = "";
+});
+
+// ---------- modal: ver / mover / perder ----------
+const ovl = document.getElementById("ovl");
+function cerrar(){ ovl.hidden = true; }
+document.getElementById("m-cerrar").addEventListener("click", cerrar);
+ovl.addEventListener("click", function(e){ if (e.target === ovl) cerrar(); });
+
+function optEtapas(val){ return ETAPAS.filter(e=>e.id<ADMIN_ETAPA).map(e => '<option value="'+e.id+'"'+(e.id==val?' selected':'')+'>'+(e.id+1)+' · '+e.nombre+'</option>').join(""); }
+function optCanchas(val){ return ["nuestra","cliente","tercero"].map(c => '<option value="'+c+'"'+(c===val?' selected':'')+'>'+LBL[c]+'</option>').join(""); }
+
+async function abrir(id, modo){
+  const n = NEGS.find(x => x.id === id); if (!n) return;
+  const eq = eqById(n.asesor_id);
+  document.getElementById("m-nombre").textContent = n.cliente;
+  document.getElementById("m-sub").textContent = (n.lote_clave || "sin lote") + " · " + (eq?eq.nombre:"—");
+  const cuerpo = document.getElementById("m-cuerpo");
+
+  if (modo === "perdida") {
+    cuerpo.innerHTML =
+      '<p class="txt">Muere en <b style="font-weight:500">' + ETAPAS.find(e=>e.id===n.etapa).nombre + '</b>.</p>' +
+      '<h3>Motivo principal</h3><div class="motivos">' +
+        MOTIVOS.filter(m=>m.activo).map(m => '<label><input type="radio" name="mot" value="'+m.texto+'">'+m.texto+'</label>').join("") +
+      '</div>' +
+      '<div class="mform" style="margin-top:14px">' +
+        '<div class="full"><label>¿Qué objetó exactamente?</label><textarea id="p-obj"></textarea></div>' +
+        '<div><label>¿Contra quién lo perdimos?</label><input id="p-comp"></div>' +
+        '<div><label>Recontactar el</label><input type="date" id="p-fecha"></div>' +
+      '</div>' +
+      '<div class="acciones" style="margin-top:16px"><button class="btn" id="p-ok">Marcar perdida</button>' +
+      '<button class="btn sec" id="p-cancel">Cancelar</button><span class="ok" id="p-msg"></span></div>';
+    document.getElementById("p-cancel").addEventListener("click", () => abrir(id, null));
+    document.getElementById("p-ok").addEventListener("click", async function(){
+      const r = document.querySelector('input[name="mot"]:checked');
+      const obj = document.getElementById("p-obj").value.trim();
+      const msg = document.getElementById("p-msg");
+      if (!r) { msg.style.color="var(--nuestra)"; msg.textContent="Elige el motivo"; return; }
+      if (!obj) { msg.style.color="var(--nuestra)"; msg.textContent="Escribe qué objetó"; return; }
+      await sb.from("negociaciones").update({
+        perdida: true, motivo_perdida: r.value, objecion: obj,
+        competidor: document.getElementById("p-comp").value.trim(),
+        recontactar: document.getElementById("p-fecha").value || null,
+        etapa_muerte: n.etapa,
+      }).eq("id", n.id);
+      await sb.from("bitacora").insert({ negociacion_id: n.id, texto: "Perdida · " + r.value + " · " + obj, etapa: n.etapa, cancha: n.cancha });
+      cerrar();
+    });
+    ovl.hidden = false; return;
+  }
+
+  const preset = modo === null ? n.etapa : modo;
+  const { data: bitData } = await sb.from("bitacora").select("*").eq("negociacion_id", n.id).order("creado_en", {ascending:false});
+  const bit = (bitData||[]).map(b => '<div class="e"><span class="f">' + b.fecha + ' · ' + ETAPAS.find(e=>e.id===b.etapa)?.nombre + ' · ' + LBL[b.cancha] + '</span>' + b.texto + '</div>').join("");
+  const aviso = modo !== null
+    ? '<p class="txt" style="color:var(--tinta)"><b style="font-weight:500">La mueves de ' + ETAPAS.find(e=>e.id===n.etapa).nombre + ' a ' + ETAPAS.find(e=>e.id===preset).nombre + '.</b></p>'
+    : '<p class="txt"><b style="font-weight:500">Ahora:</b> ' + ETAPAS.find(e=>e.id===n.etapa).nombre + ' · ' + LBL[n.cancha] + '<br><b style="font-weight:500">Siguiente paso:</b> ' + (n.siguiente_paso||"—") + '</p>';
+
+  cuerpo.innerHTML = aviso +
+    '<h3>' + (modo !== null ? "Qué pasó" : "Registrar movimiento") + '</h3>' +
+    '<div class="mform">' +
+      '<div class="full"><textarea id="mv-texto" placeholder="Qué pasó"></textarea></div>' +
+      '<div><label>Etapa</label><select id="mv-etapa">' + optEtapas(preset) + '</select></div>' +
+      '<div><label>Cancha</label><select id="mv-cancha">' + optCanchas(n.cancha) + '</select></div>' +
+      '<div class="full"><label><input type="checkbox" id="mv-resp" style="width:auto;margin-right:6px">El cliente respondió en este movimiento</label></div>' +
+      '<div class="full"><label>Nuevo siguiente paso</label><input id="mv-paso" value="'+(n.siguiente_paso||"")+'"></div>' +
+      '<div><label>Comprometido para</label><input type="date" id="mv-fpaso" value="'+(n.fecha_compromiso||"")+'"></div>' +
+      '<div class="full"><label>Acuerdos y pendientes</label><textarea id="mv-notas">' + (n.notas || "") + '</textarea></div>' +
+    '</div>' +
+    '<div class="acciones" style="margin-top:16px"><button class="btn" id="mv-guardar">Guardar movimiento</button>' +
+    '<button class="btn sec" id="mv-perder">Marcar perdida</button>' +
+    (modo !== null ? '<button class="btn sec" id="mv-cancel">Cancelar</button>' : '') +
+    '<span class="ok" id="mv-msg"></span></div>' +
+    '<h3>Bitácora</h3><div class="bit">' + bit + '</div>';
+
+  if (modo !== null) document.getElementById("mv-cancel").addEventListener("click", cerrar);
+  document.getElementById("mv-perder").addEventListener("click", () => abrir(id, "perdida"));
+  document.getElementById("mv-guardar").addEventListener("click", async function(){
+    const texto = document.getElementById("mv-texto").value.trim();
+    const paso = document.getElementById("mv-paso").value.trim();
+    const msg = document.getElementById("mv-msg");
+    if (!texto || !paso) { msg.style.color="var(--nuestra)"; msg.textContent="Falta qué pasó y el siguiente paso"; return; }
+    const et = +document.getElementById("mv-etapa").value;
+    const cancha = document.getElementById("mv-cancha").value;
+    const patch = {
+      etapa: et, cancha, siguiente_paso: paso,
+      fecha_compromiso: document.getElementById("mv-fpaso").value || null,
+      notas: document.getElementById("mv-notas").value,
+      fecha_ultimo_contacto: hoy(),
+      actualizado_en: new Date().toISOString(),
+    };
+    if (document.getElementById("mv-resp").checked) patch.fecha_ultima_respuesta = hoy();
+    await sb.from("negociaciones").update(patch).eq("id", n.id);
+    await sb.from("bitacora").insert({ negociacion_id: n.id, texto, etapa: et, cancha });
+    if (modo !== null) cerrar(); else abrir(id, null);
+  });
+  ovl.hidden = false;
+}
+
+// ---------- perdidas ----------
+async function perdidas(){
+  const todas = NEGS.filter(n => n.perdida);
+  const cont = document.getElementById("l-perdidas");
+  if (!todas.length) {
+    cont.innerHTML = '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Todavía no hay negociaciones perdidas.</p>';
+    document.getElementById("g-motivo").innerHTML = ""; document.getElementById("g-etapa").innerHTML = ""; return;
+  }
+  function barras(id, mapa){
+    const max = Math.max.apply(null, Object.values(mapa));
+    document.getElementById(id).innerHTML = Object.keys(mapa).sort((a,b)=>mapa[b]-mapa[a]).map(k =>
+      '<div class="b"><span class="et">' + k + '</span><span class="bar" style="width:' + Math.round(mapa[k]/max*240) + 'px"></span><span class="c">' + mapa[k] + '</span></div>'
+    ).join("");
+  }
+  const pm = {}, pe = {};
+  todas.forEach(function(x){
+    pm[x.motivo_perdida || "Sin motivo"] = (pm[x.motivo_perdida || "Sin motivo"] || 0) + 1;
+    const et = ETAPAS.find(e => e.id === (x.etapa_muerte ?? x.etapa))?.nombre || "—";
+    pe[et] = (pe[et] || 0) + 1;
+  });
+  barras("g-motivo", pm); barras("g-etapa", pe);
+  cont.innerHTML = todas.map(function(x){
+    const eq = eqById(x.asesor_id);
+    return '<div class="perd"><div class="t">' + x.cliente + ' · ' + (x.lote_clave || "sin lote") + '</div>' +
+      '<div class="m"><b style="font-weight:500">' + (x.motivo_perdida || "sin motivo") + '</b> · murió en ' + (ETAPAS.find(e=>e.id===(x.etapa_muerte??x.etapa))?.nombre) + ' · ' + (eq?eq.nombre:"—") + '</div>' +
+      (x.objecion ? '<div class="m">' + x.objecion + '</div>' : '') + '</div>';
+  }).join("");
+}
+
+// ---------- ajustes ----------
+function pintarCat(tabla, items, contId){
+  document.getElementById(contId).innerHTML = items.map(function(x){
+    return '<div class="catrow'+(x.activo?"":" inactivo")+'"><input type="text" value="'+x.texto.replace(/"/g,"&quot;")+'" data-id="'+x.id+'" data-tabla="'+tabla+'">' +
+      '<button class="del" data-toggle="'+x.id+'" data-tabla="'+tabla+'">'+(x.activo?"Desactivar":"Activar")+'</button></div>';
+  }).join("") || '<p class="mini">Sin elementos todavía.</p>';
+}
+
+function pintarAjustes(){
+  if (!esAdmin()) return;
+  pintarCat("motivos_perdida", MOTIVOS, "cat-motivos");
+  pintarCat("formas_pago", FORMAS_PAGO, "cat-pago");
+  pintarCat("origenes", ORIGENES, "cat-origenes");
+  document.getElementById("eq-list").innerHTML = EQUIPO.map(function(a){
+    return '<div class="eqrow">' +
+      '<span class="punto" style="background:'+a.color+'"></span>' +
+      '<input type="text" value="'+a.nombre.replace(/"/g,"&quot;")+'" data-eq="nombre" data-id="'+a.id+'">' +
+      '<span class="mini">'+a.email+'</span>' +
+      '<select data-eq="rol" data-id="'+a.id+'"><option value="asesor"'+(a.rol==="asesor"?" selected":"")+'>asesor</option><option value="admin"'+(a.rol==="admin"?" selected":"")+'>admin</option></select>' +
+      '<select data-eq="activo" data-id="'+a.id+'"><option value="true"'+(a.activo?" selected":"")+'>activo</option><option value="false"'+(!a.activo?" selected":"")+'>inactivo</option></select>' +
+      '</div>';
+  }).join("");
+}
+
+document.getElementById("p-ajustes").addEventListener("click", async function(e){
+  const addBtn = e.target.closest("button[data-cat]");
+  if (addBtn) {
+    const texto = document.getElementById(addBtn.dataset.input).value.trim();
+    if (!texto) return;
+    const tabla = addBtn.dataset.cat;
+    const arr = tabla==="motivos_perdida"?MOTIVOS:tabla==="formas_pago"?FORMAS_PAGO:ORIGENES;
+    await sb.from(tabla).insert({ texto, orden: arr.length + 1 });
+    document.getElementById(addBtn.dataset.input).value = "";
+    await cargarCatalogos(); pintarAjustes();
+    return;
+  }
+  const toggleBtn = e.target.closest("button[data-toggle]");
+  if (toggleBtn) {
+    const tabla = toggleBtn.dataset.tabla, id = toggleBtn.dataset.toggle;
+    const arr = tabla==="motivos_perdida"?MOTIVOS:tabla==="formas_pago"?FORMAS_PAGO:ORIGENES;
+    const item = arr.find(x=>x.id===id);
+    await sb.from(tabla).update({ activo: !item.activo }).eq("id", id);
+    await cargarCatalogos(); pintarAjustes();
+  }
+});
+
+document.getElementById("p-ajustes").addEventListener("change", async function(e){
+  const inp = e.target.closest("[data-tabla]");
+  if (inp && inp.tagName === "INPUT") {
+    await sb.from(inp.dataset.tabla).update({ texto: inp.value.trim() }).eq("id", inp.dataset.id);
+    await cargarCatalogos();
+    return;
+  }
+  const eqField = e.target.closest("[data-eq]");
+  if (eqField) {
+    const campo = eqField.dataset.eq, id = eqField.dataset.id;
+    let val = eqField.value;
+    if (campo === "activo") val = val === "true";
+    await sb.from("equipo").update({ [campo]: val }).eq("id", id);
+    await cargarCatalogos(); render();
+  }
+});
+
+// ---------- arranque ----------
+(async function(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await arrancar();
+})();
+</script>
+</body>
+</html>
