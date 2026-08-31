@@ -305,20 +305,29 @@ sb.auth.onAuthStateChange(function(event, session){
 });
 
 async function arrancar(){
-  document.getElementById("auth-gate").hidden = true;
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return;
 
+  const msg = document.getElementById("auth-msg");
+  msg.style.color = "var(--tinta-2)"; msg.textContent = "Entrando…";
+
   // el trigger crea la fila de equipo al vuelo; puede tardar un instante la primera vez
-  let miEquipo = null;
+  let miEquipo = null, ultimoError = null;
   for (let i = 0; i < 6 && !miEquipo; i++){
-    const { data } = await sb.from("equipo").select("*").eq("id", session.user.id).maybeSingle();
-    miEquipo = data;
+    const { data, error } = await sb.from("equipo").select("*").eq("id", session.user.id).maybeSingle();
+    miEquipo = data; ultimoError = error;
     if (!miEquipo) await new Promise(r => setTimeout(r, 500));
   }
-  if (!miEquipo) { document.getElementById("auth-msg").textContent = "No se pudo crear tu perfil, intenta recargar."; return; }
+  if (!miEquipo) {
+    msg.style.color = "var(--nuestra)";
+    msg.textContent = ultimoError
+      ? "No se pudo cargar tu perfil: " + ultimoError.message + " (¿ya corriste supabase/schema.sql en el SQL Editor?)"
+      : "No se pudo crear tu perfil, intenta recargar.";
+    return;
+  }
   ME = miEquipo;
 
+  document.getElementById("auth-gate").hidden = true;
   document.getElementById("app").hidden = false;
   document.getElementById("yo-nombre").textContent = ME.nombre;
   document.getElementById("yo-rol").textContent = esAdmin() ? "Ve todo el tablero" : "Ve solo lo suyo";
