@@ -416,7 +416,7 @@ grupo("f-verquien", v => verQuien = v);
 // ---------- tablero ----------
 function visibles(){
   let v = NEGS.filter(n => !n.perdida);
-  if (verQuien === "mias") v = v.filter(n => n.asesor_id === ME.id);
+  if (!esAdmin() || verQuien === "mias") v = v.filter(n => n.asesor_id === ME.id);
   if (fCancha !== "todas") v = v.filter(n => n.cancha === fCancha);
   return v;
 }
@@ -597,7 +597,7 @@ async function abrir(id, modo){
 
 // ---------- perdidas ----------
 async function perdidas(){
-  const todas = NEGS.filter(n => n.perdida);
+  const todas = NEGS.filter(n => n.perdida && (esAdmin() || n.asesor_id === ME.id));
   const cont = document.getElementById("l-perdidas");
   if (!todas.length) {
     cont.innerHTML = '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Todavía no hay negociaciones perdidas.</p>';
