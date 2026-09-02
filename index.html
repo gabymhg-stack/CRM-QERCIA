@@ -395,7 +395,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
   <div class="addrow"><input id="add-origen" placeholder="Nuevo origen…"><button class="btn sec" data-cat="origenes" data-input="add-origen">Agregar</button></div>
   <h3>Equipo</h3>
   <div id="eq-list"></div>
-  <p class="hint" style="margin-top:8px">Rol "admin" = ve y edita todo el tablero. Rol "asesor" = solo ve y edita lo propio. "Reasigna caducados" es un permiso aparte: deja ver y reasignar la bolsa de "sin dueño" en Bandeja sin ser admin — Gabriela, Enrique y Erick lo tienen por defecto.</p>
+  <p class="hint" style="margin-top:8px">El correo de aquí tiene que ser <b style="font-weight:500">exactamente igual</b> al correo con el que esa persona entra (el que le diste de alta en Supabase → Authentication → Users) — si no coinciden letra por letra, la app le va a decir "tu correo no está dado de alta" aunque su cuenta sí exista. Rol "admin" = ve y edita todo el tablero. Rol "asesor" = solo ve y edita lo propio. "Reasigna caducados" es un permiso aparte: deja ver y reasignar la bolsa de "sin dueño" en Bandeja sin ser admin — Gabriela, Enrique y Erick lo tienen por defecto.</p>
 </div>
 
 <div class="panel" id="p-doc" hidden>
@@ -1357,7 +1357,7 @@ function pintarAjustes(){
     return '<div class="eqrow">' +
       '<span class="punto" style="background:'+a.color+'"></span>' +
       '<input type="text" value="'+a.nombre.replace(/"/g,"&quot;")+'" data-eq="nombre" data-id="'+a.id+'">' +
-      '<span class="mini">'+a.email+'</span>' +
+      '<input type="email" value="'+a.email.replace(/"/g,"&quot;")+'" data-eq="email" data-id="'+a.id+'">' +
       '<select data-eq="rol" data-id="'+a.id+'"><option value="asesor"'+(a.rol==="asesor"?" selected":"")+'>asesor</option><option value="admin"'+(a.rol==="admin"?" selected":"")+'>admin</option></select>' +
       '<select data-eq="activo" data-id="'+a.id+'"><option value="true"'+(a.activo?" selected":"")+'>activo</option><option value="false"'+(!a.activo?" selected":"")+'>inactivo</option></select>' +
       '<select data-eq="puede_reasignar_caducados" data-id="'+a.id+'"><option value="false"'+(!a.puede_reasignar_caducados?" selected":"")+'>no reasigna</option><option value="true"'+(a.puede_reasignar_caducados?" selected":"")+'>reasigna caducados</option></select>' +
