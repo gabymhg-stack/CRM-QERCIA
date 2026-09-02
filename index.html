@@ -190,13 +190,20 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
   <div class="form" id="form-captura">
     <div class="f"><label>Nombre completo del cliente <span class="req">*</span></label><input id="c-cliente"><div class="err" id="e-cliente" hidden>Escribe el nombre completo</div></div>
     <div class="f"><label>Teléfono</label><input id="c-tel"></div>
+    <div class="f"><label>Correo</label><input id="c-correo" type="email"></div>
     <div class="f"><label>Origen</label><select id="c-origen"></select></div>
     <div class="f" id="w-duenio" hidden><label>Asesor dueño <span class="req">*</span></label><select id="c-asesor"></select></div>
-    <div class="f"><label>Lote</label><select id="c-lote"><option value="">Sin definir</option></select><div class="err" id="e-lote" hidden>De cotización en adelante hace falta el lote</div></div>
+    <div class="f" id="w-reftipo" hidden><label>Tipo de referido <span class="req">*</span></label><select id="c-reftipo"><option value="Interno">Interno</option><option value="Externo">Externo</option></select></div>
+    <div class="f" id="w-refquien" hidden><label>Quién lo refirió <span class="req">*</span></label><input id="c-refquien"><div class="hint">No puede ser el mismo asesor dueño.</div><div class="err" id="e-refquien" hidden>Falta quién lo refirió, o es el mismo asesor dueño</div></div>
+    <div class="f" id="w-agencia" hidden><label>Agencia <span class="req">*</span></label><input id="c-agencia"><div class="err" id="e-agencia" hidden>Falta la agencia</div></div>
+    <div class="f" id="w-broker" hidden><label>Bróker <span class="req">*</span></label><input id="c-broker"><div class="err" id="e-broker" hidden>Falta el nombre del bróker</div></div>
+    <div class="f" id="w-fbroker" hidden><label>Fecha registro bróker</label><input type="date" id="c-fbroker"></div>
+    <div class="f"><label>Lote</label><select id="c-lote"><option value="">Sin definir</option></select><div class="hint" id="c-lote-info"></div><div class="err" id="e-lote" hidden>De cotización en adelante hace falta el lote</div></div>
     <div class="f"><label>Forma de pago</label><select id="c-pago"></select></div>
-    <div class="f"><label>Etapa</label><select id="c-etapa"></select></div>
+    <div class="f"><label>Etapa</label><select id="c-etapa"></select><div class="err" id="e-etapa" hidden></div></div>
     <div class="f"><label>Cancha</label><select id="c-cancha"><option value="nuestra">Nuestra</option><option value="cliente">Del cliente</option><option value="tercero">De tercero</option></select></div>
     <div class="f"><label>Último contacto nuestro</label><input type="date" id="c-fcontacto"></div>
+    <div class="f"><label>Última respuesta suya</label><input type="date" id="c-frespuesta"></div>
     <div class="f wide" style="grid-column:span 3"><label>Siguiente paso <span class="req">*</span></label><input id="c-paso"><div class="hint">Si no puedes escribir el siguiente paso, la negociación no está calificada.</div><div class="err" id="e-paso" hidden>Escribe cuál es el siguiente paso</div></div>
     <div class="f"><label>Comprometido para</label><input type="date" id="c-fpaso"></div>
     <div class="f" style="grid-column:span 2"><label>Acuerdos y pendientes</label><textarea id="c-notas"></textarea></div>
@@ -274,6 +281,7 @@ const CFG = window.QERCIA_CONFIG;
 const sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
 const mxn = new Intl.NumberFormat("es-MX", {maximumFractionDigits:0});
 const ADMIN_ETAPA = 7;
+const ETAPA_PERDIDO = 50; // valor centinela: nunca se guarda así, es solo la opción "Perdido" del selector — al elegirla se abre el flujo normal de "Marcar perdida" (motivo, objeción, etc.)
 const LBL = {nuestra:"Cancha nuestra", cliente:"Cancha del cliente", tercero:"Cancha de tercero"};
 const COLORES_DEFAULT = ["#F26B0A","#1B3FE0","#A01236","#26D2F5","#3ECC1E","#B07CF0","#8A5A0B","#3B6D11"];
 
@@ -290,12 +298,12 @@ function esAdmin(){ return ME && ME.rol === "admin"; }
 
 // ---------- selector de usuario ----------
 // Nota: por ahora no hay login real (sin correo, sin contraseña). Cada quien
-// elige su nombre de una lista y el navegador lo recuerda. Es un acuerdo de
-// equipo, no un candado de servidor — se puede endurecer más adelante.
-const LS_KEY = "qercia_quien_id";
+// elige su nombre de una lista, en cada visita — no se queda guardado, así
+// que sirve igual para un dispositivo compartido (showroom) que para uno
+// personal. Es un acuerdo de equipo, no un candado de servidor — se puede
+// endurecer más adelante.
 
 document.getElementById("b-salir").addEventListener("click", function(){
-  localStorage.removeItem(LS_KEY);
   location.reload();
 });
 
@@ -303,8 +311,9 @@ document.getElementById("quien-entrar").addEventListener("click", function(){
   const id = document.getElementById("quien-select").value;
   const msg = document.getElementById("auth-msg");
   if (!id) { msg.style.color = "var(--nuestra)"; msg.textContent = "Elige tu nombre de la lista"; return; }
-  localStorage.setItem(LS_KEY, id);
-  arrancar();
+  const miEquipo = EQUIPO.find(x => x.id === id);
+  if (!miEquipo) { msg.style.color = "var(--nuestra)"; msg.textContent = "No se encontró ese usuario, recarga la página"; return; }
+  entrar(miEquipo);
 });
 
 async function poblarSelectorQuien(){
@@ -322,16 +331,12 @@ async function poblarSelectorQuien(){
 }
 
 async function arrancar(){
-  const guardado = localStorage.getItem(LS_KEY);
-  if (!EQUIPO.length) await poblarSelectorQuien();
+  document.getElementById("auth-gate").hidden = false;
+  document.getElementById("app").hidden = true;
+  await poblarSelectorQuien();
+}
 
-  const miEquipo = guardado ? EQUIPO.find(x => x.id === guardado) : null;
-  if (!miEquipo) {
-    if (guardado) localStorage.removeItem(LS_KEY);
-    document.getElementById("auth-gate").hidden = false;
-    document.getElementById("app").hidden = true;
-    return;
-  }
+async function entrar(miEquipo){
   ME = miEquipo;
 
   document.getElementById("auth-gate").hidden = true;
@@ -369,16 +374,49 @@ async function cargarCatalogos(){
   const selP = document.getElementById("c-pago"); selP.innerHTML = "";
   FORMAS_PAGO.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.texto; o.textContent=x.texto; selP.appendChild(o); });
   const selL = document.getElementById("c-lote");
-  LOTES.forEach(function(x){ const o=document.createElement("option"); o.value=x.clave; o.textContent=x.clave+" · "+(x.tipologia||"-")+" · "+(x.m2||"?")+" m²"; selL.appendChild(o); });
+  LOTES.slice().sort((a,b)=>a.clave.localeCompare(b.clave)).forEach(function(x){
+    const o=document.createElement("option"); o.value=x.clave;
+    o.textContent = x.clave+" · "+(x.tipologia||"-")+" · "+(x.m2||"?")+" m²"+(x.se_puede_separar?"":" · aún no se puede separar");
+    selL.appendChild(o);
+  });
   if (esAdmin()){
     const selA = document.getElementById("c-asesor"); selA.innerHTML = "";
     EQUIPO.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.id; o.textContent=x.nombre; selA.appendChild(o); });
   }
   document.getElementById("c-fcontacto").value = hoy();
+  pintarCamposOrigen();
+  pintarInfoLote();
 
   document.getElementById("leyenda-eq").innerHTML = EQUIPO.map(function(a){
     return '<span><i class="sw" style="background:'+a.color+'"></i>'+a.nombre+'</span>';
   }).join("");
+}
+
+// ---------- campos condicionales de Captura (referido / bróker / lote) ----------
+function pintarCamposOrigen(){
+  const origen = document.getElementById("c-origen").value;
+  document.getElementById("w-reftipo").hidden = origen !== "Referido";
+  document.getElementById("w-refquien").hidden = origen !== "Referido";
+  document.getElementById("w-agencia").hidden = origen !== "Bróker externo";
+  document.getElementById("w-broker").hidden = origen !== "Bróker externo";
+  document.getElementById("w-fbroker").hidden = origen !== "Bróker externo";
+}
+document.getElementById("c-origen").addEventListener("change", pintarCamposOrigen);
+
+function pintarInfoLote(){
+  const l = lote(document.getElementById("c-lote").value);
+  const info = document.getElementById("c-lote-info");
+  if (!l) { info.textContent = ""; return; }
+  info.textContent = (l.tipologia||"-") + " · " + (l.m2||"?") + " m² · " +
+    (l.precio ? mxn.format(l.precio) : "sin precio") +
+    (l.se_puede_separar ? "" : " · todavía no se puede separar (falta jurídico)");
+}
+document.getElementById("c-lote").addEventListener("change", pintarInfoLote);
+
+function nombreDuenioCaptura(){
+  const idSel = esAdmin() ? document.getElementById("c-asesor").value : ME.id;
+  const eq = eqById(idSel);
+  return eq ? eq.nombre.trim().toLowerCase() : "";
 }
 
 async function cargarNegociaciones(){
@@ -440,7 +478,7 @@ function tarjeta(n){
 
 function render(){
   const v = visibles();
-  document.getElementById("board").innerHTML = ETAPAS.map(function(et){
+  document.getElementById("board").innerHTML = ETAPAS.filter(et => et.id !== ETAPA_PERDIDO).map(function(et){
     const items = v.filter(n => n.etapa === et.id);
     return '<div class="col' + (et.id >= ADMIN_ETAPA ? " admin" : "") + '" data-i="' + et.id + '">' +
       '<div class="col-h"><div class="nom">' + et.nombre + ' <span style="color:var(--tinta-3);font-weight:400">' + items.length + '</span></div>' +
@@ -470,33 +508,58 @@ document.getElementById("b-guardar").addEventListener("click", async function(){
   const cliente = document.getElementById("c-cliente").value.trim();
   const paso = document.getElementById("c-paso").value.trim();
   const etapa = +document.getElementById("c-etapa").value;
+  const origen = document.getElementById("c-origen").value;
   const loteVal = document.getElementById("c-lote").value;
+  const l = loteVal ? lote(loteVal) : null;
   const faltaLote = etapa >= 4 && !loteVal;
+  const faltaSepara = etapa === 6 && l && !l.se_puede_separar;
+
+  const refquien = document.getElementById("c-refquien").value.trim();
+  const faltaRefquien = origen === "Referido" &&
+    (!refquien || refquien.toLowerCase() === nombreDuenioCaptura());
+  const agencia = document.getElementById("c-agencia").value.trim();
+  const broker = document.getElementById("c-broker").value.trim();
+  const faltaAgencia = origen === "Bróker externo" && !agencia;
+  const faltaBroker = origen === "Bróker externo" && !broker;
+
   document.getElementById("e-cliente").hidden = !!cliente;
   document.getElementById("e-paso").hidden = !!paso;
   document.getElementById("e-lote").hidden = !faltaLote;
-  if (!cliente || !paso || faltaLote) return;
+  document.getElementById("e-refquien").hidden = !faltaRefquien;
+  document.getElementById("e-agencia").hidden = !faltaAgencia;
+  document.getElementById("e-broker").hidden = !faltaBroker;
+  const eEtapa = document.getElementById("e-etapa");
+  eEtapa.hidden = !faltaSepara;
+  eEtapa.textContent = "Este lote todavía no se puede separar: falta que jurídico confirme propietario, gravamen y disponibilidad.";
+  if (!cliente || !paso || faltaLote || faltaSepara || faltaRefquien || faltaAgencia || faltaBroker) return;
 
   const asesorId = esAdmin() ? document.getElementById("c-asesor").value : ME.id;
   const row = {
     cliente, telefono: document.getElementById("c-tel").value.trim(),
-    origen: document.getElementById("c-origen").value,
-    asesor_id: asesorId,
+    correo: document.getElementById("c-correo").value.trim() || null,
+    origen, asesor_id: asesorId,
     lote_clave: loteVal || null,
     forma_pago: document.getElementById("c-pago").value,
     etapa, cancha: document.getElementById("c-cancha").value,
     fecha_ultimo_contacto: document.getElementById("c-fcontacto").value || null,
+    fecha_ultima_respuesta: document.getElementById("c-frespuesta").value || null,
     siguiente_paso: paso,
     fecha_compromiso: document.getElementById("c-fpaso").value || null,
     notas: document.getElementById("c-notas").value.trim(),
+    reftipo: origen === "Referido" ? document.getElementById("c-reftipo").value : null,
+    refquien: origen === "Referido" ? refquien : null,
+    agencia: origen === "Bróker externo" ? agencia : null,
+    broker: origen === "Bróker externo" ? broker : null,
+    fecha_registro_broker: origen === "Bróker externo" ? (document.getElementById("c-fbroker").value || null) : null,
   };
   const { data, error } = await sb.from("negociaciones").insert(row).select().single();
   const msg = document.getElementById("msg");
   if (error) { msg.style.color = "var(--nuestra)"; msg.textContent = "Error: " + error.message; return; }
   await sb.from("bitacora").insert({ negociacion_id: data.id, texto: "Alta de la negociación", etapa, cancha: row.cancha });
   msg.style.color = "var(--verde)"; msg.textContent = "Guardada"; setTimeout(()=>msg.textContent="", 2200);
-  ["c-cliente","c-tel","c-paso","c-notas"].forEach(id => document.getElementById(id).value = "");
+  ["c-cliente","c-tel","c-correo","c-paso","c-notas","c-refquien","c-agencia","c-broker","c-fbroker","c-frespuesta"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("c-lote").value = "";
+  pintarInfoLote(); pintarCamposOrigen();
 });
 
 // ---------- modal: ver / mover / perder ----------
@@ -505,7 +568,10 @@ function cerrar(){ ovl.hidden = true; }
 document.getElementById("m-cerrar").addEventListener("click", cerrar);
 ovl.addEventListener("click", function(e){ if (e.target === ovl) cerrar(); });
 
-function optEtapas(val){ return ETAPAS.filter(e=>e.id<ADMIN_ETAPA).map(e => '<option value="'+e.id+'"'+(e.id==val?' selected':'')+'>'+(e.id+1)+' · '+e.nombre+'</option>').join(""); }
+function optEtapas(val){
+  return ETAPAS.filter(e=>e.id<ADMIN_ETAPA).map(e => '<option value="'+e.id+'"'+(e.id==val?' selected':'')+'>'+(e.id+1)+' · '+e.nombre+'</option>').join("")
+    + '<option value="'+ETAPA_PERDIDO+'">8 · Perdido</option>';
+}
 function optCanchas(val){ return ["nuestra","cliente","tercero"].map(c => '<option value="'+c+'"'+(c===val?' selected':'')+'>'+LBL[c]+'</option>').join(""); }
 
 async function abrir(id, modo){
@@ -574,12 +640,19 @@ async function abrir(id, modo){
   if (modo !== null) document.getElementById("mv-cancel").addEventListener("click", cerrar);
   document.getElementById("mv-perder").addEventListener("click", () => abrir(id, "perdida"));
   document.getElementById("mv-guardar").addEventListener("click", async function(){
+    const et = +document.getElementById("mv-etapa").value;
+    if (et === ETAPA_PERDIDO) { abrir(id, "perdida"); return; }
     const texto = document.getElementById("mv-texto").value.trim();
     const paso = document.getElementById("mv-paso").value.trim();
     const msg = document.getElementById("mv-msg");
     if (!texto || !paso) { msg.style.color="var(--nuestra)"; msg.textContent="Falta qué pasó y el siguiente paso"; return; }
-    const et = +document.getElementById("mv-etapa").value;
     const cancha = document.getElementById("mv-cancha").value;
+    const lActual = n.lote_clave ? lote(n.lote_clave) : null;
+    if (et === 6 && (!lActual || !lActual.se_puede_separar)) {
+      msg.style.color = "var(--nuestra)";
+      msg.textContent = "Este lote todavía no se puede separar: falta que jurídico confirme propietario, gravamen y disponibilidad.";
+      return;
+    }
     const patch = {
       etapa: et, cancha, siguiente_paso: paso,
       fecha_compromiso: document.getElementById("mv-fpaso").value || null,
