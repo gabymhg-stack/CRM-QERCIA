@@ -65,6 +65,65 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .leyenda{display:flex;flex-wrap:wrap;gap:20px;margin-top:22px;padding-top:14px;border-top:1px solid var(--linea);font-size:13px;color:var(--tinta-2)}
 .sw{width:13px;height:13px;border-radius:3px;flex:none;display:inline-block}
 .leyenda span{display:flex;align-items:center;gap:7px}
+
+/* ---------- embudo / KPIs del Tablero ---------- */
+.pipe{--lead:#9C958A; --pipe:#2C6FB5; --best:#8A5A0B; --commit:#B03A22; --closed:#3B6D11; margin-bottom:22px}
+.pipe-kpi{display:flex;flex-wrap:wrap;border:1px solid var(--linea);background:var(--papel-2);margin-bottom:14px}
+.pipe-kpi .k{flex:1;min-width:170px;padding:13px 18px;border-right:1px solid var(--linea)}
+.pipe-kpi .k:last-child{border-right:none}
+.pipe-kpi .kn{display:block;font-size:25px;font-weight:600;letter-spacing:-.6px;line-height:1.1;font-variant-numeric:tabular-nums}
+.pipe-kpi .kn i{font-size:12px;font-weight:500;font-style:normal;color:var(--tinta-3);margin-left:3px}
+.pipe-kpi .kl{display:block;font-size:11px;color:var(--tinta-3);margin-top:3px;line-height:1.4}
+.pipe-kpi .acc{background:#F3F6EC}
+.pipe-kpi .acc .kn{color:var(--verde)}
+.pipe-h,.pipe-f{display:grid;grid-template-columns:minmax(190px,1.5fr) minmax(200px,2.4fr) 60px 52px 48px 84px 46px 42px;gap:0 12px;align-items:center}
+.pipe-h{padding:0 6px 6px;border-bottom:1px solid var(--linea-fuerte)}
+.pipe-h span{font-size:10px;color:var(--tinta-3);letter-spacing:.06em;text-transform:uppercase}
+.pipe-h .r,.pipe-f .r{text-align:right}
+.pipe-cat{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;padding:13px 6px 5px}
+.pipe-cat b{font-size:10.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase}
+.pipe-cat em{font-size:11px;color:var(--tinta-3);font-style:italic}
+.pipe-cat .esc{font-size:10px;color:var(--ambar);border-left:1px solid var(--linea);padding-left:9px}
+.c-lead b{color:var(--lead)} .c-pipe b{color:var(--pipe)} .c-best b{color:var(--best)}
+.c-commit b{color:var(--commit)} .c-closed b{color:var(--closed)}
+.pipe-f{padding:6px;border-bottom:1px solid var(--linea)}
+.pipe-f .e{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pipe-f .e b{font-size:13px;font-weight:500}
+.pipe-f .e em{font-size:10px;color:var(--tinta-3);font-style:normal}
+.pipe-f .b{display:flex;align-items:center;gap:9px}
+.pipe-f .b i{height:16px;border-radius:2px;display:block;min-width:2px}
+.pipe-f .b u{font-size:13px;font-weight:600;text-decoration:none;font-variant-numeric:tabular-nums}
+.c-lead .b i{background:var(--lead)} .c-pipe .b i{background:var(--pipe)} .c-best .b i{background:var(--best)}
+.c-commit .b i{background:var(--commit)} .c-closed .b i{background:var(--closed)}
+.pipe-f .n,.pipe-f .p{font-size:12px;color:var(--tinta-3);font-variant-numeric:tabular-nums}
+.pipe-f.vac{opacity:.5}
+.pipe-nota{font-size:10.5px;color:var(--tinta-3);margin-top:9px;line-height:1.6;max-width:100ch}
+@media(max-width:1150px){.pipe-h{display:none}.pipe-f{grid-template-columns:1fr auto;gap:4px 10px}.pipe-f .b{grid-column:span 2}}
+.acciones-hoy{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ah-t{font-size:12px;color:var(--tinta-3);margin-right:2px}
+.ah{font-family:inherit;font-size:12.5px;padding:5px 11px;border:1px solid var(--linea-fuerte);background:transparent;color:var(--tinta-2);border-radius:2px}
+.ah b{font-weight:500;color:var(--tinta)}
+.ah.mal{border-color:var(--nuestra);color:var(--nuestra)}
+.ah.mal b{color:var(--nuestra)}
+.vermas{display:block;width:100%;font-family:inherit;font-size:11.5px;padding:6px;margin-top:2px;border:1px dashed var(--linea-fuerte);background:transparent;color:var(--tinta-2);cursor:pointer;border-radius:2px}
+/* ---------- badges de canal y seguimiento en la tarjeta ---------- */
+.canalb{position:absolute;top:6px;right:7px;font-size:10px;font-weight:600;color:var(--tinta-3);border:1px solid var(--linea-fuerte);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center}
+.seg{font-size:10px;padding:1px 5px;border-radius:2px;white-space:nowrap}
+.p-act{background:var(--verde-bg);color:var(--verde)}
+.p-ven{background:var(--nuestra-bg);color:var(--nuestra)}
+.p-fri{background:#EEEBE4;color:var(--tinta-2)}
+.p-sin{background:#FDF6E3;color:#8A5A0B}
+/* ---------- Bandeja ---------- */
+.bnd-row{display:grid;grid-template-columns:1fr 100px 90px 110px 1fr;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
+.bnd-row .mini{font-size:11px;color:var(--tinta-3)}
+.bnd-cad{color:var(--nuestra);font-weight:500}
+.bnd-acc{display:flex;gap:6px;flex-wrap:wrap}
+.bnd-acc .btn{padding:5px 10px;font-size:12.5px}
+.bnd-reasig{display:flex;gap:6px;align-items:center}
+.bnd-reasig select{font-family:inherit;font-size:12.5px;padding:5px 6px;border:1px solid var(--linea-fuerte);border-radius:2px}
+/* ---------- Hoy ---------- */
+.hoy-row{display:grid;grid-template-columns:1fr 90px 1fr 100px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
+.hoy-row .mini{font-size:11px;color:var(--tinta-3)}
 .form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 20px;max-width:1020px}
 .f{display:flex;flex-direction:column}
 .f label{font-size:12px;color:var(--tinta-3);margin-bottom:5px}
@@ -123,7 +182,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 .catrow.inactivo{opacity:.4}
 .addrow{display:flex;gap:8px;margin-top:12px;max-width:520px}
 .addrow input{flex:1}
-.eqrow{display:grid;grid-template-columns:28px 1fr 1fr 140px 90px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
+.eqrow{display:grid;grid-template-columns:28px 1fr 1fr 140px 90px 140px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
 .eqrow select,.eqrow input{font-family:inherit;font-size:13px;padding:5px 7px;border:1px solid var(--linea-fuerte);border-radius:2px;background:var(--papel-2)}
 #auth-gate{max-width:380px;margin:14vh auto 0;text-align:center}
 #auth-gate h1{font-size:22px;margin-bottom:8px}
@@ -149,7 +208,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 <header>
   <div>
     <h1>QERCIA · tablero de negociaciones</h1>
-    <p class="sub">Nueve etapas de embudo y tres canchas. Cada quien ve lo suyo; Enrique, Javier y Gaby ven todo el tablero.</p>
+    <p class="sub">Nueve etapas de embudo, tres canchas y cuatro categorías de pronóstico. Cada quien ve lo suyo; Enrique, Javier y Gaby ven todo el tablero.</p>
   </div>
   <div class="yo">
     <span id="yo-nombre">—</span><br>
@@ -161,6 +220,8 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 
 <div class="tabs" role="tablist">
   <button class="tab" role="tab" aria-selected="true" data-p="p-tablero">Tablero</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-hoy">Hoy</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-bandeja">Bandeja</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-captura">Captura</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-perdidas">Perdidas</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-ajustes" id="tab-ajustes" hidden>Ajustes</button>
@@ -174,18 +235,45 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
       <button class="chip" aria-pressed="false" data-v="nuestra">Nuestra</button>
       <button class="chip" aria-pressed="false" data-v="cliente">Del cliente</button>
       <button class="chip" aria-pressed="false" data-v="tercero">De tercero</button></div></div>
+    <div><div class="filtro-t">Ver por seguimiento</div><div class="chips" id="f-seguim">
+      <button class="chip" aria-pressed="true" data-v="todas">Todas</button>
+      <button class="chip" aria-pressed="false" data-v="Al día">Al día</button>
+      <button class="chip" aria-pressed="false" data-v="Atrasada">Atrasadas</button>
+      <button class="chip" aria-pressed="false" data-v="Fría">Frías</button>
+      <button class="chip" aria-pressed="false" data-v="Nunca contactada">Nunca contactadas</button></div></div>
     <div id="w-verquien" hidden><div class="filtro-t">Ver</div><div class="chips" id="f-verquien">
       <button class="chip" aria-pressed="true" data-v="todas">Todo el equipo</button>
       <button class="chip" aria-pressed="false" data-v="mias">Solo mías</button></div></div>
   </div>
-  <div class="metricas" id="metricas"></div>
+  <div id="embudo"></div>
   <div class="scroller"><div class="board" id="board"></div></div>
   <div class="leyenda">
     <span><i class="sw" style="background:var(--nuestra)"></i>Cancha nuestra — el siguiente paso lo debemos nosotros</span>
     <span><i class="sw" style="background:var(--cliente)"></i>Cancha del cliente — esperamos su respuesta</span>
     <span><i class="sw" style="background:var(--tercero)"></i>Cancha de tercero — notaría, banco o la propiedad</span>
   </div>
+  <div class="leyenda">
+    <span><span class="canalb" style="position:static;display:inline-flex">I</span>/B/R/P canal — interna, bróker, referido o propiedad, esquina de la tarjeta</span>
+    <span><span class="seg p-act">Al día</span> / <span class="seg p-ven">Atrasada</span> / <span class="seg p-fri">Fría</span> — seguimiento, franja de abajo</span>
+  </div>
   <div class="leyenda" id="leyenda-eq"></div>
+</div>
+
+<div class="panel" id="p-hoy" hidden>
+  <div class="aviso"><b>Lo que hay que tocar hoy, en orden de urgencia.</b> Un toque deja la fecha de contacto en hoy y queda en la bitácora. Si además quieres registrar qué se dijo, abre la tarjeta desde el Tablero.</div>
+  <div class="barra" id="w-hoyasesor" hidden><div><div class="filtro-t">Ver por asesor</div><div class="chips" id="f-hoyasesor"></div></div></div>
+  <div id="hoy-lista"></div>
+</div>
+
+<div class="panel" id="p-bandeja" hidden>
+  <p class="txt">Registro y Contactado viven aquí, no en el Tablero. Un registro caduca a los <b style="font-weight:500">10 días</b> sin convertir a Contactado o a los <b style="font-weight:500">5 intentos</b> documentados, lo que ocurra primero — no es automático: aparece marcado abajo y hay que quitarle el dueño a mano.</p>
+  <h3>Mis registros</h3>
+  <div id="bnd-propios"></div>
+  <div id="bnd-sindueno-wrap" hidden>
+    <h3>Sin dueño — pendientes de reasignar</h3>
+    <p class="txt mini">Solo Gabriela, Enrique y Erick pueden ver y reasignar esta bolsa.</p>
+    <div id="bnd-sindueno"></div>
+  </div>
 </div>
 
 <div class="panel" id="p-captura" hidden>
@@ -233,21 +321,24 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
   <div class="addrow"><input id="add-origen" placeholder="Nuevo origen…"><button class="btn sec" data-cat="origenes" data-input="add-origen">Agregar</button></div>
   <h3>Equipo</h3>
   <div id="eq-list"></div>
-  <p class="hint" style="margin-top:8px">Rol "admin" = ve y edita todo el tablero. Rol "asesor" = solo ve y edita lo propio.</p>
+  <p class="hint" style="margin-top:8px">Rol "admin" = ve y edita todo el tablero. Rol "asesor" = solo ve y edita lo propio. "Reasigna caducados" es un permiso aparte: deja ver y reasignar la bolsa de "sin dueño" en Bandeja sin ser admin — Gabriela, Enrique y Erick lo tienen por defecto.</p>
 </div>
 
 <div class="panel" id="p-doc" hidden>
-<h2>Los dos ejes</h2>
-<p class="txt">La etapa dice dónde está la negociación en el embudo. La cancha dice quién debe el siguiente paso.</p>
+<h2>Los tres ejes</h2>
+<p class="txt">La etapa dice dónde está la negociación en el embudo. La cancha dice quién debe el siguiente paso. El seguimiento dice qué tan atendida está. Son independientes: una negociación puede estar en Cotización, en cancha nuestra, y estar fría porque nadie le ha hablado en dos semanas.</p>
 <h3>Vocabulario</h3>
 <table>
 <tr><th style="width:150px">Término</th><th>Definición operativa</th></tr>
 <tr><td class="k">Negociación</td><td>Un cliente por un lote. Es la unidad del tablero.</td></tr>
 <tr><td class="k">Cancha</td><td>Quién debe el siguiente paso: nuestra, del cliente, de tercero.</td></tr>
+<tr><td class="k">Seguimiento</td><td><b style="font-weight:500">Al día</b>: acción agendada a futuro, o contacto en los últimos 7 días. <b style="font-weight:500">Atrasada</b>: pasó la fecha que el asesor se comprometió. <b style="font-weight:500">Fría</b>: sin acción agendada y sin contacto en más de 7 días. <b style="font-weight:500">Nunca contactada</b>: no hay ninguna fecha registrada.</td></tr>
+<tr><td class="k">Canal</td><td>Quién trajo la negociación, con una letra en la esquina de la tarjeta: <b style="font-weight:500">I</b> interna (pauta, portal, caseta o sitio de POP), <b style="font-weight:500">B</b> bróker externo con contrato, <b style="font-weight:500">R</b> referido, <b style="font-weight:500">P</b> la trae la propiedad o el socio, <b style="font-weight:500">X</b> sin determinar. Se calcula solo a partir de origen/bróker/referido — no es un campo que se capture aparte.</td></tr>
 <tr><td class="k">Aging</td><td>Días desde el último cambio de etapa.</td></tr>
 <tr><td class="k">Sin contacto</td><td>Días desde que <b style="font-weight:500">nosotros</b> lo tocamos por última vez.</td></tr>
 <tr><td class="k">Sin respuesta</td><td>Días desde que <b style="font-weight:500">él</b> nos contestó por última vez.</td></tr>
-<tr><td class="k">Dueño</td><td>Un solo nombre por tarjeta. Sin dueño la tarjeta no existe.</td></tr>
+<tr><td class="k">Dueño</td><td>Un solo nombre. Sin dueño no hay tarjeta en el Tablero — vive en la Bandeja, sin dueño, esperando reasignación.</td></tr>
+<tr><td class="k">Caducado</td><td>Un Registro (etapa 1 en el selector, id 0) que lleva 10 días sin pasar a Contactado o acumuló 5 intentos documentados. No es lo mismo que perdido: caducado sigue disponible, solo se le acabó el turno a quien lo tenía. No es automático — hay que quitarle el dueño a mano desde la Bandeja.</td></tr>
 </table>
 <div class="dos-col">
 <div>
@@ -257,11 +348,12 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 <li>La alerta principal es la cancha, no el aging.</li>
 <li>Aging alto en cancha de tercero no pinta rojo.</li>
 <li>De cotización en adelante el lote es obligatorio.</li>
+<li>Cada columna muestra 8 tarjetas y el resto se pliega.</li>
 </ol>
 </div>
 <div>
 <h3>Visibilidad</h3>
-<p class="txt">Enrique, Javier y Gaby ven y editan todas las negociaciones. Cada otro asesor ve y edita únicamente las suyas — esto lo aplica la base de datos, no solo la pantalla: cada quien entra con su correo y contraseña, y ni con las herramientas de desarrollador del navegador se puede ver lo de otro asesor.</p>
+<p class="txt">Enrique, Javier y Gaby ven y editan todas las negociaciones. Cada otro asesor ve y edita únicamente las suyas — esto lo aplica la base de datos, no solo la pantalla: cada quien entra con su correo y contraseña, y ni con las herramientas de desarrollador del navegador se puede ver lo de otro asesor. La bolsa de "sin dueño" en Bandeja la ven y reasignan Gabriela, Enrique y Erick — es un permiso aparte, no hace falta ser admin para tenerlo.</p>
 </div>
 </div>
 </div>
@@ -287,10 +379,60 @@ const ETAPA_PERDIDO = 50; // valor centinela: nunca se guarda así, es solo la o
 const LBL = {nuestra:"Cancha nuestra", cliente:"Cancha del cliente", tercero:"Cancha de tercero"};
 const COLORES_DEFAULT = ["#F26B0A","#1B3FE0","#A01236","#26D2F5","#3ECC1E","#B07CF0","#8A5A0B","#3B6D11"];
 
-let ME = null;               // {id,nombre,email,color,rol}
+// ---------- modelo de embudo: probabilidad por etapa y categoría de pronóstico ----------
+const PROB = {0:0, 1:0, 2:10, 3:25, 4:40, 5:60, 6:80, 7:90, 8:100};
+const CAT  = {0:"lead", 1:"lead", 2:"pipe", 3:"pipe", 4:"pipe", 5:"best", 6:"commit", 7:"commit", 8:"closed"};
+const CATN = {
+  lead:  {t:"Leads",     d:"todavía no son oportunidad · objeto distinto, escala distinta"},
+  pipe:  {t:"Pipeline",  d:"oportunidad abierta, temprana"},
+  best:  {t:"Best case", d:"avanza bien, cerraría si todo sale"},
+  commit:{t:"Commit",    d:"hay dinero puesto"},
+  closed:{t:"Cerrado",   d:"escriturado"}
+};
+// ---------- canal: quién trajo la negociación (distinto de Origen, que dice el medio) ----------
+const CANAL = {
+  I: {t:"Interna",  d:"La generó POP con su propia pauta, portal, caseta o sitio."},
+  B: {t:"Bróker",   d:"Bróker externo con contrato de comercialización."},
+  R: {t:"Referido", d:"Alguien la pasó, sin contrato de bróker."},
+  P: {t:"Propiedad",d:"La trae la propiedad o el socio del terreno."},
+  X: {t:"Sin determinar", d:"No consta de dónde llegó."}
+};
+const ORIG_I = ["Meta","Google","Portal inmobiliario","Caseta o visita espontánea"];
+function canal(n){
+  if (n.broker) return "B";
+  if (n.refquien) return "R";
+  if (n.origen === "Propiedad") return "P";
+  if (ORIG_I.indexOf(n.origen) >= 0) return "I";
+  return "X";
+}
+// ---------- seguimiento: qué tan atendida está (distinto de la etapa y de la cancha) ----------
+function seguim(n){
+  if (n.fecha_compromiso) return n.fecha_compromiso < hoy() ? "Atrasada" : "Al día";
+  const base = (n.cancha === "cliente" && n.fecha_ultima_respuesta) ? n.fecha_ultima_respuesta : n.fecha_ultimo_contacto;
+  if (!base) return "Nunca contactada";
+  return dias(base) <= 7 ? "Al día" : "Fría";
+}
+const VIG = {"Al día":"p-act", "Atrasada":"p-ven", "Fría":"p-fri", "Nunca contactada":"p-sin"};
+// ---------- caducidad de un Registro (etapa 0), 10 días o 5 intentos ----------
+const DIAS_CADUCA = 10, MAX_INTENTOS = 5;
+function caducado(n){
+  if (n.etapa !== 0 || n.perdida) return false;
+  return (n.intentos||0) >= MAX_INTENTOS || dias(n.fecha_asignacion) > DIAS_CADUCA;
+}
+const TOPE = 8; // tarjetas visibles por columna antes de plegar
+
+let ME = null;               // {id,nombre,email,color,rol,puede_reasignar_caducados}
 let ETAPAS = [], MOTIVOS = [], FORMAS_PAGO = [], ORIGENES = [], LOTES = [], EQUIPO = [];
 let NEGS = [];
-let fCancha = "todas", verQuien = "todas";
+let fCancha = "todas", verQuien = "todas", fSeguim = "todas", fHoyAsesor = "todos";
+let abierto = {}; // columnas del Tablero con "ver las otras N" activado
+
+function puedeReasignar(){ return ME && (ME.rol === "admin" || ME.puede_reasignar_caducados); }
+function negsVisibles(){ // sin filtrar por cancha/seguimiento/perdida — para el embudo y para Perdidas
+  let v = NEGS;
+  if (!esAdmin()) v = v.filter(n => n.asesor_id === ME.id);
+  return v;
+}
 
 function hoy(){ return new Date().toISOString().slice(0,10); }
 function dias(f){ if(!f) return 0; return Math.max(0, Math.round((Date.now() - new Date(f + "T12:00:00")) / 86400000)); }
@@ -357,7 +499,7 @@ async function arrancar(session){
   document.getElementById("auth-gate").hidden = true;
   document.getElementById("app").hidden = false;
   document.getElementById("yo-nombre").textContent = ME.nombre;
-  document.getElementById("yo-rol").textContent = esAdmin() ? "Ve todo el tablero" : "Ve solo lo suyo";
+  document.getElementById("yo-rol").textContent = esAdmin() ? "Ve todo el tablero" : (ME.puede_reasignar_caducados ? "Ve lo suyo + reasigna la bolsa sin dueño" : "Ve solo lo suyo");
   document.getElementById("w-verquien").hidden = !esAdmin();
   document.getElementById("w-duenio").hidden = !esAdmin();
   document.getElementById("tab-ajustes").hidden = !esAdmin();
@@ -443,7 +585,12 @@ async function cargarNegociaciones(){
 
 function suscribirRealtime(){
   sb.channel("negs-live")
-    .on("postgres_changes", {event:"*", schema:"public", table:"negociaciones"}, async function(){ await cargarNegociaciones(); render(); if(!document.getElementById("p-perdidas").hidden) perdidas(); })
+    .on("postgres_changes", {event:"*", schema:"public", table:"negociaciones"}, async function(){
+      await cargarNegociaciones(); render();
+      if(!document.getElementById("p-perdidas").hidden) perdidas();
+      if(!document.getElementById("p-hoy").hidden) pintaHoy();
+      if(!document.getElementById("p-bandeja").hidden) pintaBandeja();
+    })
     .on("postgres_changes", {event:"*", schema:"public", table:"equipo"}, async function(){ await cargarCatalogos(); render(); })
     .subscribe();
 }
@@ -454,6 +601,8 @@ document.querySelector(".tabs").addEventListener("click", function(e){
   document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
   document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== t.dataset.p);
   if (t.dataset.p === "p-perdidas") perdidas();
+  if (t.dataset.p === "p-hoy") pintaHoy();
+  if (t.dataset.p === "p-bandeja") pintaBandeja();
   if (t.dataset.p === "p-ajustes") pintarAjustes();
 });
 
@@ -466,12 +615,15 @@ function grupo(id, set){
 }
 grupo("f-cancha", v => fCancha = v);
 grupo("f-verquien", v => verQuien = v);
+grupo("f-seguim", v => fSeguim = v);
 
 // ---------- tablero ----------
+// Registro y Contactado (etapas 0 y 1) no se dibujan aquí: viven en Bandeja.
 function visibles(){
-  let v = NEGS.filter(n => !n.perdida);
+  let v = NEGS.filter(n => !n.perdida && n.etapa >= 2);
   if (!esAdmin() || verQuien === "mias") v = v.filter(n => n.asesor_id === ME.id);
   if (fCancha !== "todas") v = v.filter(n => n.cancha === fCancha);
+  if (fSeguim !== "todas") v = v.filter(n => seguim(n) === fSeguim);
   return v;
 }
 
@@ -486,38 +638,98 @@ function tarjeta(n){
   const reloj = n.cancha === "cliente" && r !== null ? r + ' d sin respuesta' : c + ' d sin contacto';
   const viejo = c >= 8 && n.cancha === "nuestra";
   return '<div class="card" data-id="' + n.id + '" style="border-left-color:' + col + '">' +
+    '<span class="canalb" title="' + CANAL[canal(n)].t + '">' + canal(n) + '</span>' +
     '<div class="nombre">' + n.cliente + '</div>' + unidad +
     '<div class="linea2"><span class="pill p-' + n.cancha + '">' + LBL[n.cancha] + '</span>' +
-    '<span class="pill ' + (viejo ? "p-viejo" : "p-ok") + '">' + reloj + '</span></div>' +
+    '<span class="pill ' + (viejo ? "p-viejo" : "p-ok") + '">' + reloj + '</span>' +
+    '<span class="seg ' + VIG[seguim(n)] + '">' + seguim(n) + '</span></div>' +
     '<div class="duenio"><i class="punto" style="background:' + col + '"></i>' + (eq?eq.nombre:"—") + ' · ' + dias(n.creado_en.slice(0,10)) + ' d</div></div>';
 }
 
 function render(){
   const v = visibles();
-  document.getElementById("board").innerHTML = ETAPAS.filter(et => et.id !== ETAPA_PERDIDO).map(function(et){
+  document.getElementById("board").innerHTML = ETAPAS.filter(et => et.id >= 2 && et.id !== ETAPA_PERDIDO).map(function(et){
     const items = v.filter(n => n.etapa === et.id);
+    const mostrar = abierto[et.id] || items.length <= TOPE;
+    const visiblesCol = mostrar ? items : items.slice(0, TOPE);
     return '<div class="col' + (et.id >= ADMIN_ETAPA ? " admin" : "") + '" data-i="' + et.id + '">' +
       '<div class="col-h"><div class="nom">' + et.nombre + ' <span style="color:var(--tinta-3);font-weight:400">' + items.length + '</span></div>' +
       '<div class="meta">' + et.meta + '</div></div>' +
-      (items.length ? items.map(tarjeta).join("") : '<div class="vacio">Vacía</div>') + '</div>';
+      (items.length ? visiblesCol.map(tarjeta).join("") : '<div class="vacio">Vacía</div>') +
+      (items.length > TOPE ? '<button class="vermas" data-col="' + et.id + '">' + (mostrar ? "Mostrar solo " + TOPE : "Ver las otras " + (items.length - TOPE)) + '</button>' : '') +
+      '</div>';
   }).join("");
-
-  const com = v.filter(n => n.etapa < ADMIN_ETAPA);
-  const nuestra = com.filter(n => n.cancha === "nuestra").length;
-  const pct = com.length ? Math.round(nuestra / com.length * 100) : 0;
-  const est = v.filter(n => dias(n.fecha_ultimo_contacto) >= 8 && n.cancha === "nuestra").length;
-  const sep = v.filter(n => n.etapa >= 6).length;
-  document.getElementById("metricas").innerHTML =
-    '<div class="met"><div class="n">' + v.length + '</div><div class="l">Negociaciones vivas</div></div>' +
-    '<div class="met' + (pct > 50 ? " alerta" : "") + '"><div class="n">' + pct + '%</div><div class="l">Del embudo en cancha nuestra</div></div>' +
-    '<div class="met"><div class="n">' + est + '</div><div class="l">Ocho días o más paradas en cancha nuestra</div></div>' +
-    '<div class="met"><div class="n">' + sep + '</div><div class="l">De separación en adelante</div></div>';
+  pintaEmbudo();
 }
 
 document.getElementById("board").addEventListener("click", function(e){
+  const vm = e.target.closest(".vermas");
+  if (vm) { abierto[vm.dataset.col] = !abierto[vm.dataset.col]; render(); return; }
   const c = e.target.closest(".card"); if (!c) return;
   abrir(c.dataset.id, null);
 });
+
+// ---------- embudo con probabilidad por etapa y categoría de pronóstico ----------
+function pintaEmbudo(){
+  const todo = negsVisibles();
+  const alc = i => todo.filter(n => n.etapa >= i || (n.perdida && (n.etapa_muerte ?? n.etapa) >= i));
+  const enEt = i => todo.filter(n => !n.perdida && n.etapa === i);
+  const perdEt = i => todo.filter(n => n.perdida && (n.etapa_muerte ?? n.etapa) === i).length;
+  const precios = LOTES.filter(l => l.precio).map(l => l.precio);
+  const TICKET_PROM = precios.length ? Math.round(precios.reduce((a,b)=>a+b,0) / precios.length) : 7500000;
+  const valorNeg = n => { const l = n.lote_clave ? lote(n.lote_clave) : null; return (l && l.precio) ? l.precio : TICKET_PROM; };
+  const valor = arr => arr.reduce((a,n) => a + valorNeg(n), 0);
+  const mdp = v => (v/1e6).toFixed(1);
+  const dur = i => {
+    const a = todo.filter(n => n.etapa === i && n.actualizado_en).map(n => dias(n.actualizado_en.slice(0,10)));
+    if (!a.length) return null;
+    const b = a.slice().sort((x,y)=>x-y), m = b.length>>1;
+    return b.length % 2 ? b[m] : Math.round((b[m-1]+b[m])/2);
+  };
+
+  const baseLead = Math.max(1, alc(0).length);
+  const baseOpp = Math.max(1, alc(2).length);
+  const vAbierto = valor(todo.filter(n => !n.perdida && n.etapa >= 2));
+  const vPond = todo.filter(n => !n.perdida && n.etapa >= 2).reduce((a,n) => a + valorNeg(n) * PROB[n.etapa] / 100, 0);
+  const convLO = alc(0).length ? (alc(2).length / alc(0).length * 100) : 0;
+
+  let h = '<div class="pipe">';
+  h += '<div class="pipe-kpi">' +
+    '<div class="k"><span class="kn">' + alc(0).length + '</span><span class="kl">registros en total</span></div>' +
+    '<div class="k"><span class="kn">' + convLO.toFixed(1) + '%</span><span class="kl">conversión de registro a oportunidad</span></div>' +
+    '<div class="k"><span class="kn">$' + mdp(vAbierto) + '<i>MDP</i></span><span class="kl">pipeline abierto, valor nominal</span></div>' +
+    '<div class="k acc"><span class="kn">$' + mdp(vPond) + '<i>MDP</i></span><span class="kl">pipeline ponderado por probabilidad</span></div>' +
+    '</div>';
+  h += '<div class="pipe-h"><span>Etapa</span><span>Alcanzaron</span><span class="r">En etapa</span>' +
+       '<span class="r">Conv.</span><span class="r">Prob.</span><span class="r">Ponderado</span><span class="r">Días</span><span class="r">Fuga</span></div>';
+  let catPrev = "";
+  for (let i = 0; i <= 8; i++) {
+    const c = CAT[i];
+    if (c !== catPrev) {
+      catPrev = c;
+      h += '<div class="pipe-cat c-' + c + '"><b>' + CATN[c].t + '</b><em>' + CATN[c].d + '</em>' +
+           (c === "pipe" ? '<span class="esc">la barra cambia de escala: aquí la base son las ' + alc(2).length + ' oportunidades</span>' : '') + '</div>';
+    }
+    const A = alc(i), n = A.length, cur = enEt(i).length;
+    const bw = Math.round(n / (c === "lead" ? baseLead : baseOpp) * 100);
+    const cv = i > 0 && alc(i-1).length ? Math.round(n / alc(i-1).length * 100) : null;
+    const vp = valor(enEt(i)) * PROB[i] / 100;
+    const d = dur(i), fu = perdEt(i);
+    const etNom = (ETAPAS.find(e=>e.id===i)||{}).nombre || "—";
+    h += '<div class="pipe-f c-' + c + (n ? '' : ' vac') + '">' +
+      '<span class="e"><b>' + etNom + '</b></span>' +
+      '<span class="b"><i style="width:' + Math.max(n?1.5:0, bw) + '%"></i><u>' + n + '</u></span>' +
+      '<span class="r n">' + (cur || '·') + '</span>' +
+      '<span class="r n">' + (cv === null ? '' : cv + '%') + '</span>' +
+      '<span class="r p">' + PROB[i] + '%</span>' +
+      '<span class="r n">' + (cur && PROB[i] ? '$' + mdp(vp) : '·') + '</span>' +
+      '<span class="r n">' + (d === null ? '·' : d) + '</span>' +
+      '<span class="r f" style="color:var(--nuestra)">' + (fu ? fu : '') + '</span></div>';
+  }
+  h += '<div class="pipe-nota">Ponderado = ticket × probabilidad de la etapa. Las negociaciones sin lote se valúan al ticket promedio del inventario, $' + mdp(TICKET_PROM) + ' MDP, y se corrigen solas en cuanto se les asigna lote.</div>';
+  h += '</div>';
+  document.getElementById("embudo").innerHTML = h;
+}
 
 // ---------- captura ----------
 document.getElementById("b-guardar").addEventListener("click", async function(){
@@ -717,6 +929,117 @@ async function perdidas(){
   }).join("");
 }
 
+// ---------- Hoy: lo que hay que tocar hoy, en orden de urgencia ----------
+async function tocarHoy(id){
+  await sb.from("negociaciones").update({ fecha_ultimo_contacto: hoy(), actualizado_en: new Date().toISOString() }).eq("id", id);
+  await sb.from("bitacora").insert({ negociacion_id: id, texto: "Contacto registrado desde Hoy", etapa: NEGS.find(n=>n.id===id)?.etapa, cancha: NEGS.find(n=>n.id===id)?.cancha });
+  await cargarNegociaciones(); pintaHoy();
+}
+
+function pintaHoy(){
+  const wrap = document.getElementById("w-hoyasesor");
+  wrap.hidden = !esAdmin();
+  if (esAdmin() && !document.getElementById("f-hoyasesor").childElementCount) {
+    document.getElementById("f-hoyasesor").innerHTML =
+      '<button class="chip" aria-pressed="true" data-v="todos">Todos</button>' +
+      EQUIPO.filter(a=>a.activo && a.rol!=="admin").map(a => '<button class="chip" aria-pressed="false" data-v="' + a.id + '">' + a.nombre + '</button>').join("");
+    grupo("f-hoyasesor", v => fHoyAsesor = v);
+  }
+  const rango = {"Atrasada":0, "Nunca contactada":1, "Fría":2};
+  let v = NEGS.filter(n => !n.perdida && n.etapa >= 2 && (esAdmin() || n.asesor_id === ME.id));
+  if (esAdmin() && fHoyAsesor !== "todos") v = v.filter(n => n.asesor_id === fHoyAsesor);
+  v = v.filter(n => seguim(n) !== "Al día").sort((a,b) => rango[seguim(a)] - rango[seguim(b)]);
+  document.getElementById("hoy-lista").innerHTML = v.length
+    ? v.map(function(n){
+        const eq = eqById(n.asesor_id);
+        return '<div class="hoy-row">' +
+          '<div><b>' + n.cliente + '</b><div class="mini">' + (ETAPAS.find(e=>e.id===n.etapa)||{}).nombre + (esAdmin()?' · '+(eq?eq.nombre:"—"):'') + '</div></div>' +
+          '<span class="seg ' + VIG[seguim(n)] + '">' + seguim(n) + '</span>' +
+          '<div class="mini">' + (n.siguiente_paso || "sin siguiente paso") + '</div>' +
+          '<button class="btn sec" data-hoy="' + n.id + '">Toqué hoy</button></div>';
+      }).join("")
+    : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada pendiente por hoy — todo al día.</p>';
+}
+document.getElementById("hoy-lista").addEventListener("click", function(e){
+  const b = e.target.closest("[data-hoy]"); if (!b) return;
+  tocarHoy(b.dataset.hoy);
+});
+
+// ---------- Bandeja: Registro y Contactado, con intentos y caducidad ----------
+async function bandejaIntento(id){
+  const n = NEGS.find(x=>x.id===id); if (!n) return;
+  await sb.from("negociaciones").update({ intentos: (n.intentos||0)+1 }).eq("id", id);
+  await sb.from("bitacora").insert({ negociacion_id: id, texto: "Intento de contacto sin respuesta", etapa: n.etapa, cancha: n.cancha });
+  await cargarNegociaciones(); pintaBandeja();
+}
+async function bandejaContacto(id){
+  const n = NEGS.find(x=>x.id===id); if (!n) return;
+  await sb.from("negociaciones").update({ etapa: 1, fecha_ultimo_contacto: hoy(), actualizado_en: new Date().toISOString() }).eq("id", id);
+  await sb.from("bitacora").insert({ negociacion_id: id, texto: "Contactado — conversación de dos vías", etapa: 1, cancha: n.cancha });
+  await cargarNegociaciones(); pintaBandeja();
+}
+async function bandejaQuitarDueno(id){
+  const n = NEGS.find(x=>x.id===id); if (!n) return;
+  if (!confirm("¿Quitarle el dueño a " + n.cliente + "? Pasa a la bolsa de sin dueño.")) return;
+  await sb.from("negociaciones").update({ asesor_id: null }).eq("id", id);
+  await sb.from("bitacora").insert({ negociacion_id: id, texto: "Caducó — pierde dueño", etapa: n.etapa, cancha: n.cancha });
+  await cargarNegociaciones(); pintaBandeja();
+}
+async function bandejaAsignar(id, nuevoId){
+  if (!nuevoId) return;
+  const n = NEGS.find(x=>x.id===id); if (!n) return;
+  await sb.from("negociaciones").update({ asesor_id: nuevoId, fecha_asignacion: hoy(), intentos: 0 }).eq("id", id);
+  await sb.from("bitacora").insert({ negociacion_id: id, texto: "Reasignado a " + (eqById(nuevoId)||{}).nombre + " desde la bolsa de sin dueño", etapa: n.etapa, cancha: n.cancha });
+  await cargarNegociaciones(); pintaBandeja();
+}
+
+function filaBandeja(n, conAcciones){
+  const dAsig = dias(n.fecha_asignacion);
+  const cad = caducado(n);
+  return '<div class="bnd-row">' +
+    '<div><b>' + n.cliente + '</b><div class="mini">' + (n.telefono || '') + '</div></div>' +
+    '<div class="mini">' + (ETAPAS.find(e=>e.id===n.etapa)||{}).nombre + '</div>' +
+    '<div class="mini">' + (n.intentos||0) + ' intento' + (n.intentos===1?'':'s') + '</div>' +
+    '<div class="mini' + (cad ? ' bnd-cad' : '') + '">' + dAsig + ' d' + (cad ? ' · caducado' : '') + '</div>' +
+    '<div class="bnd-acc">' + conAcciones + '</div></div>';
+}
+
+function pintaBandeja(){
+  const propios = NEGS.filter(n => !n.perdida && n.etapa <= 1 && n.asesor_id === ME.id);
+  document.getElementById("bnd-propios").innerHTML = propios.length
+    ? propios.map(function(n){
+        const cad = caducado(n);
+        let acc = '<button class="btn sec" data-int="' + n.id + '">+1 intento</button>';
+        if (n.etapa === 0) acc += '<button class="btn sec" data-cont="' + n.id + '">Contactó</button>';
+        if (cad) acc += '<button class="btn danger" data-quitar="' + n.id + '">Quitar dueño</button>';
+        return filaBandeja(n, acc);
+      }).join("")
+    : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada en Registro o Contactado por ahora.</p>';
+
+  const wrap = document.getElementById("bnd-sindueno-wrap");
+  wrap.hidden = !puedeReasignar();
+  if (puedeReasignar()) {
+    const sind = NEGS.filter(n => !n.perdida && n.asesor_id === null);
+    const opciones = EQUIPO.filter(a=>a.activo).map(a => '<option value="' + a.id + '">' + a.nombre + '</option>').join("");
+    document.getElementById("bnd-sindueno").innerHTML = sind.length
+      ? sind.map(function(n){
+          const acc = '<span class="bnd-reasig"><select data-sel="' + n.id + '"><option value="">Reasignar a…</option>' + opciones + '</select>' +
+            '<button class="btn sec" data-asig="' + n.id + '">Asignar</button></span>';
+          return filaBandeja(n, acc);
+        }).join("")
+      : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada sin dueño por ahora.</p>';
+  }
+}
+document.getElementById("p-bandeja").addEventListener("click", function(e){
+  const i = e.target.closest("[data-int]"); if (i) return bandejaIntento(i.dataset.int);
+  const c = e.target.closest("[data-cont]"); if (c) return bandejaContacto(c.dataset.cont);
+  const q = e.target.closest("[data-quitar]"); if (q) return bandejaQuitarDueno(q.dataset.quitar);
+  const a = e.target.closest("[data-asig]"); if (a) {
+    const sel = document.querySelector('[data-sel="' + a.dataset.asig + '"]');
+    return bandejaAsignar(a.dataset.asig, sel ? sel.value : "");
+  }
+});
+
 // ---------- ajustes ----------
 function pintarCat(tabla, items, contId){
   document.getElementById(contId).innerHTML = items.map(function(x){
@@ -737,6 +1060,7 @@ function pintarAjustes(){
       '<span class="mini">'+a.email+'</span>' +
       '<select data-eq="rol" data-id="'+a.id+'"><option value="asesor"'+(a.rol==="asesor"?" selected":"")+'>asesor</option><option value="admin"'+(a.rol==="admin"?" selected":"")+'>admin</option></select>' +
       '<select data-eq="activo" data-id="'+a.id+'"><option value="true"'+(a.activo?" selected":"")+'>activo</option><option value="false"'+(!a.activo?" selected":"")+'>inactivo</option></select>' +
+      '<select data-eq="puede_reasignar_caducados" data-id="'+a.id+'"><option value="false"'+(!a.puede_reasignar_caducados?" selected":"")+'>no reasigna</option><option value="true"'+(a.puede_reasignar_caducados?" selected":"")+'>reasigna caducados</option></select>' +
       '</div>';
   }).join("");
 }
@@ -774,7 +1098,7 @@ document.getElementById("p-ajustes").addEventListener("change", async function(e
   if (eqField) {
     const campo = eqField.dataset.eq, id = eqField.dataset.id;
     let val = eqField.value;
-    if (campo === "activo") val = val === "true";
+    if (campo === "activo" || campo === "puede_reasignar_caducados") val = val === "true";
     await sb.from("equipo").update({ [campo]: val }).eq("id", id);
     await cargarCatalogos(); render();
   }
