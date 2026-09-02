@@ -137,9 +137,10 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 
 <div id="auth-gate">
   <h1>QERCIA · tablero de negociaciones</h1>
-  <p>Elige tu nombre para entrar. (Acceso de equipo, sin contraseña — se puede endurecer más adelante.)</p>
-  <select id="quien-select"><option value="">Selecciona tu nombre…</option></select>
-  <button class="btn" id="quien-entrar" style="width:100%">Entrar</button>
+  <p>Entra con tu correo de POP y tu contraseña.</p>
+  <input id="auth-email" type="email" placeholder="tu.correo@popinvestments.com" autocomplete="username">
+  <input id="auth-pass" type="password" placeholder="Contraseña" autocomplete="current-password">
+  <button class="btn" id="auth-entrar" style="width:100%">Entrar</button>
   <div id="auth-msg"></div>
 </div>
 
@@ -153,7 +154,8 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
   <div class="yo">
     <span id="yo-nombre">—</span><br>
     <span class="rolpill" id="yo-rol">…</span>
-    &nbsp; <button class="btn sec" id="b-salir" style="padding:4px 12px;font-size:12px">Cambiar de usuario</button>
+    &nbsp; <button class="btn sec" id="b-cambiar-pass" style="padding:4px 12px;font-size:12px">Cambiar contraseña</button>
+    <button class="btn sec" id="b-salir" style="padding:4px 12px;font-size:12px">Cerrar sesión</button>
   </div>
 </header>
 
@@ -222,7 +224,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 </div>
 
 <div class="panel" id="p-ajustes" hidden>
-  <p class="txt">Pensado para que solo Enrique, Javier y Gaby lo editen. Por ahora no hay restricción técnica que lo impida (es acuerdo de equipo), pero los cambios se reflejan para todos al instante.</p>
+  <p class="txt">Solo Enrique, Javier y Gaby pueden editar esto — lo aplica la base de datos, no solo la pantalla. Los cambios se reflejan para todos al instante.</p>
   <h3>Motivos de pérdida</h3><div class="catlist" id="cat-motivos"></div>
   <div class="addrow"><input id="add-motivo" placeholder="Nuevo motivo…"><button class="btn sec" data-cat="motivos_perdida" data-input="add-motivo">Agregar</button></div>
   <h3>Formas de pago</h3><div class="catlist" id="cat-pago"></div>
@@ -259,7 +261,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 </div>
 <div>
 <h3>Visibilidad</h3>
-<p class="txt">Enrique, Javier y Gaby ven y editan todas las negociaciones. Cada otro asesor ve y edita únicamente las suyas. Por ahora esto es un filtro de pantalla y un acuerdo de equipo (no hay login individual), no un candado de base de datos — se puede endurecer más adelante si hace falta.</p>
+<p class="txt">Enrique, Javier y Gaby ven y editan todas las negociaciones. Cada otro asesor ve y edita únicamente las suyas — esto lo aplica la base de datos, no solo la pantalla: cada quien entra con su correo y contraseña, y ni con las herramientas de desarrollador del navegador se puede ver lo de otro asesor.</p>
 </div>
 </div>
 </div>
@@ -296,47 +298,60 @@ function lote(clave){ return LOTES.find(x => x.clave === clave) || null; }
 function eqById(id){ return EQUIPO.find(x => x.id === id) || null; }
 function esAdmin(){ return ME && ME.rol === "admin"; }
 
-// ---------- selector de usuario ----------
-// Nota: por ahora no hay login real (sin correo, sin contraseña). Cada quien
-// elige su nombre de una lista, en cada visita — no se queda guardado, así
-// que sirve igual para un dispositivo compartido (showroom) que para uno
-// personal. Es un acuerdo de equipo, no un candado de servidor — se puede
-// endurecer más adelante.
+// ---------- login (correo + contraseña, Supabase Auth) ----------
+let YA_ARRANCADO = false;
 
-document.getElementById("b-salir").addEventListener("click", function(){
+document.getElementById("auth-entrar").addEventListener("click", entrarConCorreo);
+document.getElementById("auth-pass").addEventListener("keydown", function(e){ if (e.key === "Enter") entrarConCorreo(); });
+document.getElementById("auth-email").addEventListener("keydown", function(e){ if (e.key === "Enter") document.getElementById("auth-pass").focus(); });
+
+async function entrarConCorreo(){
+  const email = document.getElementById("auth-email").value.trim();
+  const pass = document.getElementById("auth-pass").value;
+  const msg = document.getElementById("auth-msg");
+  if (!email || !pass) { msg.style.color = "var(--nuestra)"; msg.textContent = "Escribe tu correo y tu contraseña"; return; }
+  msg.style.color = "var(--tinta-2)"; msg.textContent = "Entrando…";
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { msg.style.color = "var(--nuestra)"; msg.textContent = "No se pudo entrar: " + (error.message === "Invalid login credentials" ? "correo o contraseña incorrectos" : error.message); }
+}
+
+document.getElementById("b-salir").addEventListener("click", async function(){
+  await sb.auth.signOut();
   location.reload();
 });
 
-document.getElementById("quien-entrar").addEventListener("click", function(){
-  const id = document.getElementById("quien-select").value;
-  const msg = document.getElementById("auth-msg");
-  if (!id) { msg.style.color = "var(--nuestra)"; msg.textContent = "Elige tu nombre de la lista"; return; }
-  const miEquipo = EQUIPO.find(x => x.id === id);
-  if (!miEquipo) { msg.style.color = "var(--nuestra)"; msg.textContent = "No se encontró ese usuario, recarga la página"; return; }
-  entrar(miEquipo);
+document.getElementById("b-cambiar-pass").addEventListener("click", async function(){
+  const nueva = prompt("Nueva contraseña (mínimo 6 caracteres):");
+  if (!nueva) return;
+  if (nueva.length < 6) { alert("Muy corta — mínimo 6 caracteres."); return; }
+  const { error } = await sb.auth.updateUser({ password: nueva });
+  alert(error ? "No se pudo cambiar: " + error.message : "Contraseña actualizada.");
 });
 
-async function poblarSelectorQuien(){
-  const { data, error } = await sb.from("equipo").select("*").eq("activo", true).order("nombre");
+sb.auth.onAuthStateChange(function(event, session){
+  if (session) { arrancar(session); }
+  else {
+    YA_ARRANCADO = false;
+    document.getElementById("auth-gate").hidden = false;
+    document.getElementById("app").hidden = true;
+  }
+});
+
+async function arrancar(session){
+  if (YA_ARRANCADO) return;
   const msg = document.getElementById("auth-msg");
-  if (error) {
+  msg.style.color = "var(--tinta-2)"; msg.textContent = "Entrando…";
+
+  const { data: miEquipo, error } = await sb.from("equipo").select("*").eq("email", session.user.email).maybeSingle();
+  if (error || !miEquipo) {
     msg.style.color = "var(--nuestra)";
-    msg.textContent = "No se pudo cargar el equipo: " + error.message + " (¿ya corriste supabase/schema.sql en el SQL Editor?)";
+    msg.textContent = error
+      ? "No se pudo cargar tu perfil: " + error.message
+      : "Tu correo (" + session.user.email + ") no está dado de alta en el equipo. Avísale a un admin.";
+    await sb.auth.signOut();
     return;
   }
-  msg.textContent = "";
-  EQUIPO = data || [];
-  document.getElementById("quien-select").innerHTML = '<option value="">Selecciona tu nombre…</option>' +
-    EQUIPO.map(a => '<option value="' + a.id + '">' + a.nombre + '</option>').join("");
-}
-
-async function arrancar(){
-  document.getElementById("auth-gate").hidden = false;
-  document.getElementById("app").hidden = true;
-  await poblarSelectorQuien();
-}
-
-async function entrar(miEquipo){
+  YA_ARRANCADO = true;
   ME = miEquipo;
 
   document.getElementById("auth-gate").hidden = true;
@@ -369,6 +384,7 @@ async function cargarCatalogos(){
   ETAPAS.filter(x => x.id < ADMIN_ETAPA).forEach(function(et){
     const o = document.createElement("option"); o.value = et.id; o.textContent = (et.id+1) + " · " + et.nombre; selE.appendChild(o);
   });
+  const oPerdido = document.createElement("option"); oPerdido.value = ETAPA_PERDIDO; oPerdido.textContent = "8 · Perdido"; selE.appendChild(oPerdido);
   const selO = document.getElementById("c-origen"); selO.innerHTML = "";
   ORIGENES.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.texto; o.textContent=x.texto; selO.appendChild(o); });
   const selP = document.getElementById("c-pago"); selP.innerHTML = "";
@@ -507,12 +523,14 @@ document.getElementById("board").addEventListener("click", function(e){
 document.getElementById("b-guardar").addEventListener("click", async function(){
   const cliente = document.getElementById("c-cliente").value.trim();
   const paso = document.getElementById("c-paso").value.trim();
-  const etapa = +document.getElementById("c-etapa").value;
+  const etapaSel = +document.getElementById("c-etapa").value;
+  const esPerdidaDirecta = etapaSel === ETAPA_PERDIDO;
+  const etapa = esPerdidaDirecta ? 0 : etapaSel; // se registra en Registro y de inmediato se abre "Marcar perdida" con el motivo
   const origen = document.getElementById("c-origen").value;
   const loteVal = document.getElementById("c-lote").value;
   const l = loteVal ? lote(loteVal) : null;
-  const faltaLote = etapa >= 4 && !loteVal;
-  const faltaSepara = etapa === 6 && l && !l.se_puede_separar;
+  const faltaLote = !esPerdidaDirecta && etapa >= 4 && !loteVal;
+  const faltaSepara = !esPerdidaDirecta && etapa === 6 && l && !l.se_puede_separar;
 
   const refquien = document.getElementById("c-refquien").value.trim();
   const faltaRefquien = origen === "Referido" &&
@@ -522,8 +540,9 @@ document.getElementById("b-guardar").addEventListener("click", async function(){
   const faltaAgencia = origen === "Bróker externo" && !agencia;
   const faltaBroker = origen === "Bróker externo" && !broker;
 
+  const faltaPaso = !esPerdidaDirecta && !paso;
   document.getElementById("e-cliente").hidden = !!cliente;
-  document.getElementById("e-paso").hidden = !!paso;
+  document.getElementById("e-paso").hidden = !faltaPaso;
   document.getElementById("e-lote").hidden = !faltaLote;
   document.getElementById("e-refquien").hidden = !faltaRefquien;
   document.getElementById("e-agencia").hidden = !faltaAgencia;
@@ -531,7 +550,7 @@ document.getElementById("b-guardar").addEventListener("click", async function(){
   const eEtapa = document.getElementById("e-etapa");
   eEtapa.hidden = !faltaSepara;
   eEtapa.textContent = "Este lote todavía no se puede separar: falta que jurídico confirme propietario, gravamen y disponibilidad.";
-  if (!cliente || !paso || faltaLote || faltaSepara || faltaRefquien || faltaAgencia || faltaBroker) return;
+  if (!cliente || faltaPaso || faltaLote || faltaSepara || faltaRefquien || faltaAgencia || faltaBroker) return;
 
   const asesorId = esAdmin() ? document.getElementById("c-asesor").value : ME.id;
   const row = {
@@ -560,6 +579,7 @@ document.getElementById("b-guardar").addEventListener("click", async function(){
   ["c-cliente","c-tel","c-correo","c-paso","c-notas","c-refquien","c-agencia","c-broker","c-fbroker","c-frespuesta"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("c-lote").value = "";
   pintarInfoLote(); pintarCamposOrigen();
+  if (esPerdidaDirecta) { await cargarNegociaciones(); abrir(data.id, "perdida"); }
 });
 
 // ---------- modal: ver / mover / perder ----------
@@ -761,7 +781,8 @@ document.getElementById("p-ajustes").addEventListener("change", async function(e
 });
 
 // ---------- arranque ----------
-arrancar();
+// sb.auth.onAuthStateChange (arriba) ya dispara arrancar() solo, con la
+// sesión guardada si la hay o mostrando el login si no.
 </script>
 </body>
 </html>
