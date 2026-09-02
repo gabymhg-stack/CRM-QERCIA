@@ -124,6 +124,33 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 /* ---------- Hoy ---------- */
 .hoy-row{display:grid;grid-template-columns:1fr 90px 1fr 100px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
 .hoy-row .mini{font-size:11px;color:var(--tinta-3)}
+/* ---------- Desglose / Tiempos ---------- */
+.anform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 16px;max-width:1100px}
+.anform label{font-size:12px;color:var(--tinta-3);margin-bottom:5px;display:block}
+.anform select,.anform input{font-family:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--linea-fuerte);background:var(--papel-2);color:var(--tinta);border-radius:2px;width:100%}
+.anbar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13.5px}
+.anbar-row .et{width:190px;flex:none;font-size:13px}
+.anbar-row .bwrap{flex:1;display:flex;height:16px;border-radius:2px;overflow:hidden;background:var(--linea)}
+.anbar-row .bwrap i{display:block;height:100%}
+.anbar-row .c{width:110px;flex:none;font-size:12px;color:var(--tinta-3);text-align:right}
+.anleyenda{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0 18px;font-size:12px;color:var(--tinta-2)}
+.anleyenda span{display:flex;align-items:center;gap:6px}
+.anleyenda i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.antabla{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.antabla th,.antabla td{padding:6px 10px;border-bottom:1px solid var(--linea);text-align:right}
+.antabla th:first-child,.antabla td:first-child{text-align:left}
+.antabla th{color:var(--tinta-3);font-weight:500;font-size:11.5px}
+.antabla tr.total td{font-weight:600;border-top:2px solid var(--linea-fuerte)}
+.vista-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
+.vista-row .mini{color:var(--tinta-3);font-size:11.5px;flex:1}
+.cascada-tabla{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+.cascada-tabla th,.cascada-tabla td{padding:6px 8px;border-bottom:1px solid var(--linea);text-align:center;white-space:nowrap}
+.cascada-tabla th{color:var(--tinta-3);font-weight:500;font-size:11px}
+.cascada-tabla td:first-child,.cascada-tabla th:first-child{text-align:left;position:sticky;left:0;background:var(--papel)}
+.cascada-tabla .cn{color:var(--tinta-3);font-size:10.5px}
+.tiempos-tabla{width:100%;border-collapse:collapse;font-size:13.5px;max-width:640px}
+.tiempos-tabla th,.tiempos-tabla td{padding:7px 10px;border-bottom:1px solid var(--linea)}
+.tiempos-tabla th{color:var(--tinta-3);font-weight:500;font-size:11.5px;text-align:left}
 .form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 20px;max-width:1020px}
 .f{display:flex;flex-direction:column}
 .f label{font-size:12px;color:var(--tinta-3);margin-bottom:5px}
@@ -223,6 +250,8 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
   <button class="tab" role="tab" aria-selected="false" data-p="p-hoy">Hoy</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-bandeja">Bandeja</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-captura">Captura</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-desglose">Desglose</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-tiempos">Tiempos</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-perdidas">Perdidas</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-ajustes" id="tab-ajustes" hidden>Ajustes</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-doc">Vocabulario y reglas</button>
@@ -302,6 +331,51 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
     <button class="btn" id="b-guardar">Guardar negociación</button>
     <span class="ok" id="msg"></span>
   </div>
+</div>
+
+<div class="panel" id="p-desglose" hidden>
+  <p class="txt">Elige qué cruzar. No son gráficas fijas — arma la que necesites y guárdala si la vas a repetir.</p>
+  <div class="anform" id="an-form">
+    <div><label>Base</label><select id="an-base">
+      <option value="abiertas">Abiertas · los tres niveles</option>
+      <option value="perdidas">Solo perdidas</option>
+      <option value="todas">Todo, abiertas y perdidas</option></select></div>
+    <div><label>Agrupar por</label><select id="an-a"></select></div>
+    <div><label>Cruzar con</label><select id="an-b"><option value="">Sin cruce</option></select></div>
+    <div><label>Gráfica</label><select id="an-tipo">
+      <option value="barras">Barras</option>
+      <option value="apiladas">Barras apiladas</option>
+      <option value="cien">Barras 100%</option>
+      <option value="tabla">Solo tabla</option></select></div>
+    <div><label>Filtrar por</label><select id="an-filtrodim"><option value="">Sin filtro</option></select></div>
+    <div><label>Valor</label><select id="an-filtroval" disabled><option value="">—</option></select></div>
+    <div><label>Entraron desde</label><input type="date" id="an-d1"></div>
+    <div><label>Entraron hasta</label><input type="date" id="an-d2"></div>
+  </div>
+  <div class="acciones" style="margin-top:10px">
+    <input id="an-nombre" placeholder="Nombre para guardar esta vista" style="max-width:260px">
+    <button class="btn sec" id="an-guardar">Guardar esta vista</button>
+    <span class="ok" id="an-msg"></span>
+  </div>
+  <div id="an-salida"></div>
+  <h3>Vistas guardadas</h3>
+  <div id="an-guardadas"></div>
+</div>
+
+<div class="panel" id="p-tiempos" hidden>
+  <h2>Los dos cortes que nunca coinciden</h2>
+  <p class="txt">Por cohorte contesta "de los que entraron en tal periodo, ¿cuántos llegaron a dónde?" — sirve para juzgar una fuente de leads, pero nunca está completo: los del mes en curso siguen cocinándose. Por actividad del periodo contesta "cuántas ventas se cerraron este mes, sin importar cuándo entró el cliente" — es la caja del mes, la que sirve para el reporte y la comisión. Casi nunca empatan y está bien: una venta de septiembre puede venir de un lead de junio.</p>
+
+  <h2 style="margin-top:30px">Cascada por cohorte</h2>
+  <p class="txt">Cada renglón es el grupo de negociaciones que entró en ese periodo. Las columnas muestran cuántas de ese grupo llegaron a cada etapa (en cualquier momento, no solo hoy).</p>
+  <div class="anform" style="grid-template-columns:220px;max-width:240px;margin-bottom:10px">
+    <div><label>Agrupar por</label><select id="t-gr"><option value="mes">Mes de entrada</option><option value="semana">Semana de entrada</option></select></div>
+  </div>
+  <div id="t-cascada"></div>
+
+  <h2 style="margin-top:30px">Tiempos entre etapas</h2>
+  <p class="txt">Mediana de días entre que una negociación entra a una etapa y entra a la siguiente, calculada de la bitácora real de movimientos — solo sobre las negociaciones donde ambas fechas existen. Lo que no se puede medir se dice, no se rellena.</p>
+  <div id="t-tiempos"></div>
 </div>
 
 <div class="panel" id="p-perdidas" hidden>
@@ -433,6 +507,23 @@ function negsVisibles(){ // sin filtrar por cancha/seguimiento/perdida — para 
   if (!esAdmin()) v = v.filter(n => n.asesor_id === ME.id);
   return v;
 }
+
+// ---------- dimensiones para Desglose ----------
+const DIMENSIONES = {
+  asesor:   { t: "Asesor",             f: n => (eqById(n.asesor_id)||{}).nombre || "Sin dueño" },
+  etapa:    { t: "Etapa",              f: n => (ETAPAS.find(e=>e.id===(n.perdida ? (n.etapa_muerte??n.etapa) : n.etapa))||{}).nombre || "—" },
+  cancha:   { t: "Cancha",             f: n => LBL[n.cancha] || "—" },
+  seguim:   { t: "Seguimiento",        f: n => seguim(n) },
+  canal:    { t: "Canal",              f: n => CANAL[canal(n)].t },
+  origen:   { t: "Origen",             f: n => n.origen || "Sin registrar" },
+  motivo:   { t: "Motivo de pérdida",  f: n => n.motivo_perdida || "Sin motivo" },
+  pago:     { t: "Forma de pago",      f: n => n.forma_pago || "Sin definir" },
+  mes:      { t: "Mes de entrada",     f: n => n.creado_en ? n.creado_en.slice(0,7) : "—" },
+};
+const COLORES_AN = ["#B03A22","#1B3FE0","#8A5A0B","#3B6D11","#A01236","#26D2F5","#B07CF0","#5A554D"];
+function colorAn(i){ return COLORES_AN[i % COLORES_AN.length]; }
+let VISTAS = [];
+let BITACORA_CACHE = null;
 
 function hoy(){ return new Date().toISOString().slice(0,10); }
 function dias(f){ if(!f) return 0; return Math.max(0, Math.round((Date.now() - new Date(f + "T12:00:00")) / 86400000)); }
@@ -590,6 +681,7 @@ function suscribirRealtime(){
       if(!document.getElementById("p-perdidas").hidden) perdidas();
       if(!document.getElementById("p-hoy").hidden) pintaHoy();
       if(!document.getElementById("p-bandeja").hidden) pintaBandeja();
+      if(!document.getElementById("p-desglose").hidden) pintaDesglose();
     })
     .on("postgres_changes", {event:"*", schema:"public", table:"equipo"}, async function(){ await cargarCatalogos(); render(); })
     .subscribe();
@@ -603,6 +695,8 @@ document.querySelector(".tabs").addEventListener("click", function(e){
   if (t.dataset.p === "p-perdidas") perdidas();
   if (t.dataset.p === "p-hoy") pintaHoy();
   if (t.dataset.p === "p-bandeja") pintaBandeja();
+  if (t.dataset.p === "p-desglose") pintaDesglose();
+  if (t.dataset.p === "p-tiempos") pintaTiempos();
   if (t.dataset.p === "p-ajustes") pintarAjustes();
 });
 
@@ -1039,6 +1133,212 @@ document.getElementById("p-bandeja").addEventListener("click", function(e){
     return bandejaAsignar(a.dataset.asig, sel ? sel.value : "");
   }
 });
+
+// ---------- Desglose: motor de análisis libre (agrupar/cruzar/filtrar/graficar/guardar) ----------
+function datosBase(){
+  const base = document.getElementById("an-base").value;
+  let v = negsVisibles();
+  if (base === "abiertas") v = v.filter(n => !n.perdida);
+  else if (base === "perdidas") v = v.filter(n => n.perdida);
+  const d1 = document.getElementById("an-d1").value, d2 = document.getElementById("an-d2").value;
+  if (d1) v = v.filter(n => n.creado_en && n.creado_en.slice(0,10) >= d1);
+  if (d2) v = v.filter(n => n.creado_en && n.creado_en.slice(0,10) <= d2);
+  return v;
+}
+function datosDesglose(){
+  let v = datosBase();
+  const fdim = document.getElementById("an-filtrodim").value, fval = document.getElementById("an-filtroval").value;
+  if (fdim && fval) v = v.filter(n => (DIMENSIONES[fdim].f(n) || "—") === fval);
+  return v;
+}
+function poblarFiltroValor(){
+  const dim = document.getElementById("an-filtrodim").value;
+  const sel = document.getElementById("an-filtroval");
+  if (!dim) { sel.innerHTML = '<option value="">—</option>'; sel.disabled = true; return; }
+  sel.disabled = false;
+  const valores = Array.from(new Set(datosBase().map(n => DIMENSIONES[dim].f(n) || "—"))).sort();
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>' + valores.map(v => '<option value="' + v.replace(/"/g,"&quot;") + '">' + v + '</option>').join("");
+  if (valores.indexOf(actual) >= 0) sel.value = actual;
+}
+function poblarControlesDesglose(){
+  if (document.getElementById("an-a").childElementCount) return;
+  const opciones = Object.keys(DIMENSIONES).map(k => '<option value="' + k + '">' + DIMENSIONES[k].t + '</option>').join("");
+  document.getElementById("an-a").innerHTML = opciones;
+  document.getElementById("an-a").value = "asesor";
+  document.getElementById("an-b").innerHTML += opciones;
+  document.getElementById("an-filtrodim").innerHTML += opciones;
+  ["an-base","an-a","an-b","an-tipo","an-d1","an-d2"].forEach(id => document.getElementById(id).addEventListener("change", renderDesglose));
+  document.getElementById("an-filtrodim").addEventListener("change", function(){ poblarFiltroValor(); renderDesglose(); });
+  document.getElementById("an-filtroval").addEventListener("change", renderDesglose);
+}
+function renderDesglose(){
+  const dimA = document.getElementById("an-a").value;
+  const dimB = document.getElementById("an-b").value;
+  const tipo = document.getElementById("an-tipo").value;
+  const data = datosDesglose();
+  const fa = DIMENSIONES[dimA].f;
+  const fb = (dimB && tipo !== "barras") ? DIMENSIONES[dimB].f : null;
+  const rows = {}, colsSet = new Set();
+  data.forEach(function(n){
+    const ka = fa(n) || "—";
+    const kb = fb ? (fb(n) || "—") : "Total";
+    colsSet.add(kb);
+    rows[ka] = rows[ka] || {};
+    rows[ka][kb] = (rows[ka][kb]||0) + 1;
+  });
+  const cols = Array.from(colsSet);
+  const totalDe = k => Object.values(rows[k]).reduce((a,b)=>a+b,0);
+  const rowKeys = Object.keys(rows).sort((a,b) => totalDe(b) - totalDe(a));
+  const out = document.getElementById("an-salida");
+
+  if (!rowKeys.length) { out.innerHTML = '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Sin datos con estos filtros.</p>'; return; }
+
+  if (tipo === "tabla") {
+    const totCols = {}; let totGeneral = 0;
+    let h = '<div style="overflow-x:auto"><table class="antabla"><tr><th>' + DIMENSIONES[dimA].t + '</th>' + cols.map(c=>'<th>'+c+'</th>').join('') + (cols.length>1?'<th>Total</th>':'') + '</tr>';
+    rowKeys.forEach(function(k){
+      let totRow = 0;
+      h += '<tr><td>' + k + '</td>' + cols.map(function(c){
+        const v = rows[k][c] || 0; totRow += v; totCols[c] = (totCols[c]||0) + v; return '<td>' + (v || '·') + '</td>';
+      }).join('') + (cols.length>1 ? '<td>'+totRow+'</td>' : '') + '</tr>';
+      totGeneral += totRow;
+    });
+    if (cols.length>1) h += '<tr class="total"><td>Total</td>' + cols.map(c=>'<td>'+(totCols[c]||0)+'</td>').join('') + '<td>'+totGeneral+'</td></tr>';
+    h += '</table></div>';
+    out.innerHTML = h;
+    return;
+  }
+
+  const maxTotal = Math.max.apply(null, rowKeys.map(totalDe));
+  let h = cols.length > 1 ? '<div class="anleyenda">' + cols.map((c,i) => '<span><i style="background:'+colorAn(i)+'"></i>'+c+'</span>').join('') + '</div>' : '';
+  rowKeys.forEach(function(k){
+    const total = totalDe(k);
+    const segs = cols.map((c,i) => {
+      if (!rows[k][c]) return '';
+      const ancho = tipo === "cien" ? (rows[k][c]/total*100) : (rows[k][c]/maxTotal*100);
+      return '<i style="width:' + ancho + '%;background:' + colorAn(i) + '"></i>';
+    }).join('');
+    h += '<div class="anbar-row"><span class="et">' + k + '</span><span class="bwrap">' + segs + '</span><span class="c">' + total + '</span></div>';
+  });
+  out.innerHTML = h;
+}
+async function cargarVistas(){
+  const { data } = await sb.from("vistas_analisis").select("*").order("creado_en", {ascending:false});
+  VISTAS = data || [];
+  document.getElementById("an-guardadas").innerHTML = VISTAS.length ? VISTAS.map(function(v){
+    const eq = eqById(v.creado_por);
+    return '<div class="vista-row"><b>' + v.nombre + '</b><span class="mini">' + (eq?eq.nombre:"—") + '</span>' +
+      '<button class="btn sec" data-cargar="' + v.id + '">Cargar</button>' +
+      ((esAdmin() || v.creado_por === ME.id) ? '<button class="del" data-borrar="' + v.id + '">Borrar</button>' : '') + '</div>';
+  }).join("") : '<p class="txt mini" style="font-style:italic;color:var(--tinta-3)">Nada guardado todavía.</p>';
+}
+document.getElementById("an-guardar").addEventListener("click", async function(){
+  const nombre = document.getElementById("an-nombre").value.trim();
+  const msg = document.getElementById("an-msg");
+  if (!nombre) { msg.style.color = "var(--nuestra)"; msg.textContent = "Ponle un nombre"; return; }
+  const config = {
+    base: document.getElementById("an-base").value, a: document.getElementById("an-a").value,
+    b: document.getElementById("an-b").value, tipo: document.getElementById("an-tipo").value,
+    filtrodim: document.getElementById("an-filtrodim").value, filtroval: document.getElementById("an-filtroval").value,
+    d1: document.getElementById("an-d1").value, d2: document.getElementById("an-d2").value,
+  };
+  const { error } = await sb.from("vistas_analisis").insert({ nombre, config, creado_por: ME.id });
+  if (error) { msg.style.color = "var(--nuestra)"; msg.textContent = "Error: " + error.message; return; }
+  document.getElementById("an-nombre").value = "";
+  msg.style.color = "var(--verde)"; msg.textContent = "Guardada"; setTimeout(()=>msg.textContent="", 2200);
+  cargarVistas();
+});
+document.getElementById("an-guardadas").addEventListener("click", async function(e){
+  const c = e.target.closest("[data-cargar]");
+  if (c) {
+    const v = VISTAS.find(x => x.id === c.dataset.cargar); if (!v) return;
+    const cfg = v.config || {};
+    document.getElementById("an-base").value = cfg.base || "abiertas";
+    document.getElementById("an-a").value = cfg.a || "asesor";
+    document.getElementById("an-b").value = cfg.b || "";
+    document.getElementById("an-tipo").value = cfg.tipo || "barras";
+    document.getElementById("an-filtrodim").value = cfg.filtrodim || "";
+    poblarFiltroValor();
+    document.getElementById("an-filtroval").value = cfg.filtroval || "";
+    document.getElementById("an-d1").value = cfg.d1 || "";
+    document.getElementById("an-d2").value = cfg.d2 || "";
+    renderDesglose();
+    return;
+  }
+  const b = e.target.closest("[data-borrar]");
+  if (b) { await sb.from("vistas_analisis").delete().eq("id", b.dataset.borrar); cargarVistas(); }
+});
+function pintaDesglose(){ poblarControlesDesglose(); renderDesglose(); cargarVistas(); }
+
+// ---------- Tiempos: cascada por cohorte + mediana entre etapas (de la bitácora real) ----------
+document.getElementById("t-gr").addEventListener("change", pintaCascada);
+function pintaCascada(){
+  const modo = document.getElementById("t-gr").value;
+  const v = negsVisibles();
+  function clave(n){
+    if (!n.creado_en) return "—";
+    if (modo === "mes") return n.creado_en.slice(0,7);
+    const d = new Date(n.creado_en.slice(0,10) + "T12:00:00");
+    const onejan = new Date(d.getFullYear(), 0, 1);
+    const semana = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+    return d.getFullYear() + "-S" + String(semana).padStart(2, "0");
+  }
+  const grupos = {};
+  v.forEach(function(n){ const k = clave(n); (grupos[k] = grupos[k] || []).push(n); });
+  const claves = Object.keys(grupos).sort();
+  const cont = document.getElementById("t-cascada");
+  if (!claves.length) { cont.innerHTML = '<p class="txt mini" style="font-style:italic;color:var(--tinta-3)">Sin datos.</p>'; return; }
+  const etapasCols = ETAPAS.filter(e => e.id !== ETAPA_PERDIDO).slice().sort((a,b)=>a.id-b.id);
+  let h = '<div style="overflow-x:auto"><table class="cascada-tabla"><tr><th>Cohorte</th><th>N</th>' + etapasCols.map(e=>'<th>'+e.nombre+'</th>').join('') + '</tr>';
+  claves.forEach(function(k){
+    const grupo = grupos[k];
+    h += '<tr><td>' + k + '</td><td>' + grupo.length + '</td>' + etapasCols.map(function(et){
+      const n = grupo.filter(x => x.etapa >= et.id || (x.perdida && (x.etapa_muerte ?? x.etapa) >= et.id)).length;
+      const pct = grupo.length ? Math.round(n / grupo.length * 100) : 0;
+      return '<td>' + n + '<div class="cn">' + pct + '%</div></td>';
+    }).join('') + '</tr>';
+  });
+  h += '</table></div>';
+  cont.innerHTML = h;
+}
+async function cargarBitacoraTodas(){
+  const { data, error } = await sb.from("bitacora").select("negociacion_id,fecha,etapa").order("fecha");
+  if (error) { console.error(error); BITACORA_CACHE = []; return; }
+  BITACORA_CACHE = data || [];
+}
+function pintaTiemposEtapas(){
+  const v = negsVisibles();
+  const ids = new Set(v.map(n => n.id));
+  const porNeg = {};
+  (BITACORA_CACHE || []).forEach(function(b){
+    if (!ids.has(b.negociacion_id) || b.etapa === null || b.etapa === undefined) return;
+    porNeg[b.negociacion_id] = porNeg[b.negociacion_id] || {};
+    const et = b.etapa;
+    if (!porNeg[b.negociacion_id][et] || b.fecha < porNeg[b.negociacion_id][et]) porNeg[b.negociacion_id][et] = b.fecha;
+  });
+  const etapasOrden = ETAPAS.filter(e => e.id !== ETAPA_PERDIDO).slice().sort((a,b)=>a.id-b.id);
+  let h = '<table class="tiempos-tabla"><tr><th>De</th><th>A</th><th>Mediana de días</th><th>Muestras</th></tr>';
+  for (let i = 0; i < etapasOrden.length - 1; i++) {
+    const de = etapasOrden[i].id, a = etapasOrden[i+1].id;
+    const diffs = [];
+    Object.values(porNeg).forEach(function(fechas){
+      if (fechas[de] && fechas[a]) {
+        const diff = Math.round((new Date(fechas[a]+"T12:00:00") - new Date(fechas[de]+"T12:00:00")) / 86400000);
+        if (diff >= 0) diffs.push(diff);
+      }
+    });
+    let mediana = "·";
+    if (diffs.length) {
+      const s = diffs.slice().sort((x,y)=>x-y), m = s.length >> 1;
+      mediana = s.length % 2 ? s[m] : Math.round((s[m-1]+s[m]) / 2);
+    }
+    h += '<tr><td>' + etapasOrden[i].nombre + '</td><td>' + etapasOrden[i+1].nombre + '</td><td>' + mediana + '</td><td class="mini">' + diffs.length + '</td></tr>';
+  }
+  h += '</table>';
+  document.getElementById("t-tiempos").innerHTML = h;
+}
+function pintaTiempos(){ pintaCascada(); cargarBitacoraTodas().then(pintaTiemposEtapas); }
 
 // ---------- ajustes ----------
 function pintarCat(tabla, items, contId){
