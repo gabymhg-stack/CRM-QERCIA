@@ -129,8 +129,13 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .bnd-reasig{display:flex;gap:6px;align-items:center}
 .bnd-reasig select{font-family:inherit;font-size:12.5px;padding:5px 6px;border:1px solid var(--linea-fuerte);border-radius:2px}
 /* ---------- Hoy ---------- */
-.hoy-row{display:grid;grid-template-columns:1fr 90px 1fr 100px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
+.hoy-grupo h3{font-size:14px;margin:24px 0 3px}
+.hoy-grupo .txt.mini{margin-bottom:8px}
+.hoy-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:9px 0;border-bottom:1px solid var(--linea);font-size:13.5px}
+.hoy-row .hoy-info{flex:1 1 220px;min-width:180px}
 .hoy-row .mini{font-size:11px;color:var(--tinta-3)}
+.hoy-acc{display:flex;gap:5px;flex-wrap:wrap;flex:0 1 auto}
+.hoy-acc .btn{padding:4px 8px;font-size:11.5px}
 /* ---------- Desglose / Tiempos ---------- */
 .anform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 16px;max-width:1100px}
 .anform label{font-size:12px;color:var(--tinta-3);margin-bottom:5px;display:block}
@@ -311,7 +316,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 </div>
 
 <div class="panel" id="p-hoy" hidden>
-  <div class="aviso"><b>Lo que hay que tocar hoy, en orden de urgencia.</b> Un toque deja la fecha de contacto en hoy y queda en la bitácora. Si además quieres registrar qué se dijo, abre la tarjeta desde el Tablero.</div>
+  <div class="aviso"><b>Lo que hay que tocar hoy, agrupado por qué tan urgente es.</b> Cada botón deja la fecha en la bitácora y sube la etapa si corresponde, sin abrir la tarjeta. Si además quieres dejar constancia de qué se dijo o cambiar el siguiente paso, ábrela desde el Tablero.</div>
   <div class="barra" id="w-hoyasesor" hidden><div><div class="filtro-t">Ver por asesor</div><div class="chips" id="f-hoyasesor"></div></div></div>
   <div id="hoy-lista"></div>
 </div>
@@ -1198,11 +1203,48 @@ async function perdidas(){
   }).join("");
 }
 
-// ---------- Hoy: lo que hay que tocar hoy, en orden de urgencia ----------
-async function tocarHoy(id){
-  await sb.from("negociaciones").update({ fecha_ultimo_contacto: hoy(), actualizado_en: new Date().toISOString() }).eq("id", id);
-  await sb.from("bitacora").insert({ negociacion_id: id, texto: "Contacto registrado desde Hoy", etapa: NEGS.find(n=>n.id===id)?.etapa, cancha: NEGS.find(n=>n.id===id)?.cancha });
+// ---------- Hoy: lo que hay que tocar hoy, agrupado por qué tan urgente es ----------
+// botones de un toque: cada uno deja bitácora y sube la etapa si corresponde, sin abrir el modal.
+const ACTOS = [
+  { id: "llame",    t: "Llamé",          d: "Intento de llamada sin respuesta",  sal: true, intento: true },
+  { id: "wa",       t: "Mandé WhatsApp", d: "Mensaje de WhatsApp saliente",      sal: true, intento: true },
+  { id: "contesto", t: "Contestó",       d: "Hubo conversación de dos vías",     ent: true, etapa: 1 },
+  { id: "califico", t: "Calificó",       d: "Presupuesto, plazo, pago y lote",   etapa: 2 },
+  { id: "visito",   t: "Visitó",         d: "Recorrido del lote hecho",          etapa: 3 },
+  { id: "cotice",   t: "Coticé",         d: "Cotización con folio emitida",      etapa: 4 },
+  { id: "nego",     t: "Negociando",     d: "Precio y condiciones en discusión", etapa: 5 },
+  { id: "aparto",   t: "Apartó",         d: "Anticipo en cuenta institucional",  etapa: 6 },
+];
+async function registrarActo(id, actoId){
+  const n = NEGS.find(x=>x.id===id); if (!n) return;
+  const a = ACTOS.find(x=>x.id===actoId); if (!a) return;
+  if (a.etapa === 6) {
+    const l = n.lote_clave ? lote(n.lote_clave) : null;
+    if (!l || !l.se_puede_separar) {
+      alert("Este lote todavía no se puede separar: falta que jurídico confirme propietario, gravamen y disponibilidad.");
+      return;
+    }
+  }
+  const patch = { actualizado_en: new Date().toISOString() };
+  if (a.sal) patch.fecha_ultimo_contacto = hoy();
+  if (a.ent) { patch.fecha_ultimo_contacto = hoy(); patch.fecha_ultima_respuesta = hoy(); }
+  if (a.intento) patch.intentos = (n.intentos||0) + 1;
+  let etapaLog = n.etapa;
+  if (a.etapa !== undefined && n.etapa < a.etapa) { etapaLog = a.etapa; patch.etapa = a.etapa; }
+  await sb.from("negociaciones").update(patch).eq("id", id);
+  await sb.from("bitacora").insert({ negociacion_id: id, texto: a.t + " · " + a.d, etapa: etapaLog, cancha: n.cancha });
   await cargarNegociaciones(); pintaHoy();
+}
+function botonesActo(id){
+  return ACTOS.map(a => '<button class="btn sec" data-negid="' + id + '" data-acto="' + a.id + '" title="' + a.d + '">' + a.t + '</button>').join("");
+}
+function filaHoy(n, badge, cls){
+  const eq = eqById(n.asesor_id);
+  return '<div class="hoy-row">' +
+    '<div class="hoy-info"><b>' + n.cliente + '</b> <span class="seg ' + cls + '">' + badge + '</span>' +
+    '<div class="mini">' + (ETAPAS.find(e=>e.id===n.etapa)||{}).nombre + (esAdmin()?' · '+(eq?eq.nombre:"Sin dueño"):'') +
+    ' · ' + (n.siguiente_paso || "sin siguiente paso") + '</div></div>' +
+    '<div class="hoy-acc">' + botonesActo(n.id) + '</div></div>';
 }
 
 function pintaHoy(){
@@ -1212,26 +1254,39 @@ function pintaHoy(){
     document.getElementById("f-hoyasesor").innerHTML =
       '<button class="chip" aria-pressed="true" data-v="todos">Todos</button>' +
       EQUIPO.filter(a=>a.activo && a.rol!=="admin").map(a => '<button class="chip" aria-pressed="false" data-v="' + a.id + '">' + a.nombre + '</button>').join("");
-    grupo("f-hoyasesor", v => fHoyAsesor = v);
+    grupo("f-hoyasesor", v => { fHoyAsesor = v; pintaHoy(); });
   }
-  const rango = {"Atrasada":0, "Nunca contactada":1, "Fría":2};
-  let v = NEGS.filter(n => !n.perdida && n.etapa >= 2 && (esAdmin() || n.asesor_id === ME.id));
-  if (esAdmin() && fHoyAsesor !== "todos") v = v.filter(n => n.asesor_id === fHoyAsesor);
-  v = v.filter(n => seguim(n) !== "Al día").sort((a,b) => rango[seguim(a)] - rango[seguim(b)]);
-  document.getElementById("hoy-lista").innerHTML = v.length
-    ? v.map(function(n){
-        const eq = eqById(n.asesor_id);
-        return '<div class="hoy-row">' +
-          '<div><b>' + n.cliente + '</b><div class="mini">' + (ETAPAS.find(e=>e.id===n.etapa)||{}).nombre + (esAdmin()?' · '+(eq?eq.nombre:"—"):'') + '</div></div>' +
-          '<span class="seg ' + VIG[seguim(n)] + '">' + seguim(n) + '</span>' +
-          '<div class="mini">' + (n.siguiente_paso || "sin siguiente paso") + '</div>' +
-          '<button class="btn sec" data-hoy="' + n.id + '">Toqué hoy</button></div>';
-      }).join("")
+  let todas = NEGS.filter(n => !n.perdida && (esAdmin() || n.asesor_id === ME.id));
+  if (esAdmin() && fHoyAsesor !== "todos") todas = todas.filter(n => n.asesor_id === fHoyAsesor);
+
+  const grupos = [
+    ["Compromisos vencidos", "Se puso una fecha y ya pasó. Esto va primero, siempre.",
+      todas.filter(n => n.fecha_compromiso && n.fecha_compromiso < hoy()), "Vencido", "p-ven"],
+    ["Comprometidos para hoy", "Se prometió dar este paso hoy.",
+      todas.filter(n => n.fecha_compromiso && n.fecha_compromiso === hoy()), "Hoy", "p-act"],
+    ["Registros sin un solo intento", "Tienen dueño y nadie los ha tocado. Cada día que pasa se acercan a caducar.",
+      todas.filter(n => n.etapa === 0 && !caducado(n) && (n.intentos||0) === 0), "Sin tocar", "p-sin"],
+    ["Negociaciones frías", "Sin acción agendada y sin contacto en más de 7 días.",
+      todas.filter(n => n.etapa >= 2 && seguim(n) === "Fría"), "Fría", "p-fri"],
+    ["Contactados sin calificar", "Ya contestaron. Falta presupuesto, plazo, forma de pago y lote de interés para calificar.",
+      todas.filter(n => n.etapa === 1), "Por calificar", "p-act"],
+  ];
+  let h = "", total = 0;
+  grupos.forEach(function(g){
+    if (!g[2].length) return;
+    total += g[2].length;
+    h += '<div class="hoy-grupo"><h3>' + g[0] + ' <span class="mini">· ' + g[2].length + '</span></h3>' +
+      '<p class="txt mini">' + g[1] + '</p>' +
+      g[2].slice(0, 12).map(n => filaHoy(n, g[3], g[4])).join("") +
+      (g[2].length > 12 ? '<p class="txt mini" style="font-style:italic">Se muestran las primeras 12 de ' + g[2].length + '. Filtra por asesor para ver el resto.</p>' : '') +
+      '</div>';
+  });
+  document.getElementById("hoy-lista").innerHTML = total ? h
     : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada pendiente por hoy — todo al día.</p>';
 }
 document.getElementById("hoy-lista").addEventListener("click", function(e){
-  const b = e.target.closest("[data-hoy]"); if (!b) return;
-  tocarHoy(b.dataset.hoy);
+  const b = e.target.closest("[data-acto]"); if (!b) return;
+  registrarActo(b.dataset.negid, b.dataset.acto);
 });
 
 // ---------- Bandeja: Registro y Contactado, con intentos y caducidad ----------
