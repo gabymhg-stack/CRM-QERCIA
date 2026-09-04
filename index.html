@@ -1016,13 +1016,17 @@ function pintaEmbudo(){
       h += '<div class="pipe-cat c-' + f.c + '"><b>' + CATN[f.c].t + '</b><em>' + CATN[f.c].d + '</em>' +
            (f.c === "pipe" ? '<span class="esc">la barra cambia de escala: aquí la base son las ' + alc(2).length + ' oportunidades</span>' : '') + '</div>';
     }
-    // se angosta hacia el ancho de la siguiente fila, como un embudo real — no un dibujo fijo
+    // se angosta hacia el ancho de la siguiente fila, como un embudo real — no un dibujo fijo.
+    // el recorte va solo del lado derecho (el izquierdo se queda fijo en 0) para que el borde de
+    // abajo de esta fila caiga exactamente donde empieza la de abajo — si no, al angostar parejo
+    // de los dos lados cada fila queda centrada en su propio eje y se ve como reloj de arena, no
+    // como un embudo continuo.
     const sig = filas[idx+1];
     const anchoSig = sig ? Math.min(sig.bw, f.bw) : f.bw;
-    const rec = f.bw ? Math.max(0, (f.bw - anchoSig) / 2 / f.bw * 100).toFixed(2) : 0;
+    const rec = f.bw ? Math.max(0, (f.bw - anchoSig) / f.bw * 100).toFixed(2) : 0;
     h += '<div class="pipe-f c-' + f.c + (f.n ? '' : ' vac') + '">' +
       '<span class="e"><b>' + (f.et.nombre || "—") + '</b><em>' + (f.et.meta || "") + '</em></span>' +
-      '<span class="b"><i style="width:' + f.bw + '%;clip-path:polygon(0 0,100% 0,calc(100% - ' + rec + '%) 100%,' + rec + '% 100%)"></i><u>' + f.n + '</u></span>' +
+      '<span class="b"><i style="width:' + f.bw + '%;clip-path:polygon(0 0,100% 0,calc(100% - ' + rec + '%) 100%,0 100%)"></i><u>' + f.n + '</u></span>' +
       '<span class="r n">' + (f.cur || '·') + '</span>' +
       '<span class="r pctreg">' + Math.round(f.n / baseLead * 100) + '%' + banda(f.i, f.n, baseLead) + '</span>' +
       '<span class="r n">' + (f.cv === null ? '' : f.cv + '%<i>' + (f.cv < 100 ? 'cae ' + (100 - f.cv) + '%' : '') + '</i>') + '</span>' +
