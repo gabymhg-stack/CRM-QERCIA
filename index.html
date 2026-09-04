@@ -35,6 +35,10 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--linea-fuerte);background:transparent;color:var(--tinta-2);padding:5px 12px;font-size:13px;cursor:pointer;font-family:inherit;border-radius:2px}
 .chip[aria-pressed="true"]{background:var(--tinta);border-color:var(--tinta);color:var(--papel)}
+.rango{display:flex;align-items:center;gap:6px;margin-top:7px}
+.rango label{font-size:11px;color:var(--tinta-3)}
+.rango input{font-family:inherit;font-size:12px;padding:4px 7px;border:1px solid var(--linea-fuerte);background:var(--papel-2);color:var(--tinta);border-radius:2px}
+.rango input:focus{outline:none;border-color:var(--tinta)}
 .metricas{display:flex;border:1px solid var(--linea);background:var(--papel-2);margin-bottom:24px;flex-wrap:wrap}
 .met{flex:1;min-width:130px;padding:12px 16px;border-right:1px solid var(--linea)}
 .met:last-child{border-right:none}
@@ -258,7 +262,14 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 </div>
 
 <div class="panel" id="p-tablero">
+  <div class="aviso" id="aviso-tab"></div>
   <div class="barra">
+    <div><div class="filtro-t">Periodo de entrada</div><div class="chips" id="f-per">
+      <button class="chip" aria-pressed="true" data-v="todo">Todo</button>
+      <button class="chip" aria-pressed="false" data-v="7">Últimos 7 d</button>
+      <button class="chip" aria-pressed="false" data-v="30">Últimos 30 d</button></div>
+      <div class="rango"><label>del</label><input type="date" id="p-d1"><label>al</label><input type="date" id="p-d2">
+      <button class="chip" id="p-clr" hidden>Limpiar</button></div></div>
     <div><div class="filtro-t">Ver por cancha</div><div class="chips" id="f-cancha">
       <button class="chip" aria-pressed="true" data-v="todas">Todas</button>
       <button class="chip" aria-pressed="false" data-v="nuestra">Nuestra</button>
@@ -270,9 +281,17 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
       <button class="chip" aria-pressed="false" data-v="Atrasada">Atrasadas</button>
       <button class="chip" aria-pressed="false" data-v="Fría">Frías</button>
       <button class="chip" aria-pressed="false" data-v="Nunca contactada">Nunca contactadas</button></div></div>
-    <div id="w-verquien" hidden><div class="filtro-t">Ver</div><div class="chips" id="f-verquien">
-      <button class="chip" aria-pressed="true" data-v="todas">Todo el equipo</button>
-      <button class="chip" aria-pressed="false" data-v="mias">Solo mías</button></div></div>
+    <div><div class="filtro-t">Ver por canal</div><div class="chips" id="f-canal">
+      <button class="chip" aria-pressed="true" data-v="todos">Todos</button>
+      <button class="chip" aria-pressed="false" data-v="I">Interna</button>
+      <button class="chip" aria-pressed="false" data-v="B">Bróker</button>
+      <button class="chip" aria-pressed="false" data-v="R">Referido</button>
+      <button class="chip" aria-pressed="false" data-v="P">Propiedad</button>
+      <button class="chip" aria-pressed="false" data-v="X">Sin determinar</button></div></div>
+    <div><div class="filtro-t">Referidas por</div><div class="chips" id="f-refpor">
+      <button class="chip" aria-pressed="true" data-v="todos">Cualquiera</button></div></div>
+    <div id="w-verquien" hidden><div class="filtro-t">Ver por asesor</div><div class="chips" id="f-verquien">
+      <button class="chip" aria-pressed="true" data-v="todas">Todo el equipo</button></div></div>
   </div>
   <div id="embudo"></div>
   <div class="scroller"><div class="board" id="board"></div></div>
@@ -317,7 +336,8 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
     <div class="f" id="w-agencia" hidden><label>Agencia <span class="req">*</span></label><input id="c-agencia"><div class="err" id="e-agencia" hidden>Falta la agencia</div></div>
     <div class="f" id="w-broker" hidden><label>Bróker <span class="req">*</span></label><input id="c-broker"><div class="err" id="e-broker" hidden>Falta el nombre del bróker</div></div>
     <div class="f" id="w-fbroker" hidden><label>Fecha registro bróker</label><input type="date" id="c-fbroker"></div>
-    <div class="f"><label>Lote</label><select id="c-lote"><option value="">Sin definir</option></select><div class="hint" id="c-lote-info"></div><div class="err" id="e-lote" hidden>De cotización en adelante hace falta el lote</div></div>
+    <div class="f"><label>Manzana</label><select id="c-manzana"><option value="">Sin definir</option></select><div class="hint">Primero la manzana; abajo se filtran sus lotes.</div></div>
+    <div class="f"><label>Lote</label><select id="c-lote"><option value="">Elige manzana primero</option></select><div class="hint" id="c-lote-info"></div><div class="err" id="e-lote" hidden>De cotización en adelante hace falta el lote</div></div>
     <div class="f"><label>Forma de pago</label><select id="c-pago"></select></div>
     <div class="f"><label>Etapa</label><select id="c-etapa"></select><div class="err" id="e-etapa" hidden></div></div>
     <div class="f"><label>Cancha</label><select id="c-cancha"><option value="nuestra">Nuestra</option><option value="cliente">Del cliente</option><option value="tercero">De tercero</option></select></div>
@@ -380,6 +400,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 
 <div class="panel" id="p-perdidas" hidden>
   <p class="txt">Cada perdida conserva la etapa donde murió y el motivo.</p>
+  <h3>Por asesor · últimos 60 días</h3><div class="barras" id="g-asesor60"></div>
   <h3>Por motivo</h3><div class="barras" id="g-motivo"></div>
   <h3>Por etapa donde murió</h3><div class="barras" id="g-etapa"></div>
   <h3>Detalle</h3><div id="l-perdidas"></div>
@@ -401,6 +422,20 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 <div class="panel" id="p-doc" hidden>
 <h2>Los tres ejes</h2>
 <p class="txt">La etapa dice dónde está la negociación en el embudo. La cancha dice quién debe el siguiente paso. El seguimiento dice qué tan atendida está. Son independientes: una negociación puede estar en Cotización, en cancha nuestra, y estar fría porque nadie le ha hablado en dos semanas.</p>
+
+<h2 style="margin-top:34px">Cuándo es venta</h2>
+<p class="txt">Hay tres momentos distintos y cada uno sirve para algo distinto. Reportar solo uno es lo que hace que el número comercial nunca cuadre con el financiero.</p>
+<table>
+<tr><th style="width:170px">Momento</th><th style="width:150px">Etapa</th><th>Para qué sirve</th></tr>
+<tr><td class="k">Separación</td><td>Etapa 7</td><td>Hay anticipo en cuenta institucional y el lote queda bloqueado. <b style="font-weight:500">No es venta.</b> Es una reserva: sirve para medir intención real y para dejar de ofrecer ese lote.</td></tr>
+<tr><td class="k">Venta</td><td>Etapa 8 · Contrato</td><td>Contrato firmado y expediente completo. Es el número comercial: absorción, avance contra meta y desempeño del asesor. Todavía no es ingreso.</td></tr>
+<tr><td class="k">Venta efectiva</td><td>Etapa 9 · Escrituración</td><td>Escritura firmada e inscrita en el Registro Público. Aquí se transmite la propiedad, se reconoce el ingreso y se libera el gravamen del lote. Es el número financiero.</td></tr>
+</table>
+<p class="txt" style="margin-top:10px">Entre venta y venta efectiva se cae gente, y esa caída es económicamente distinta a perder un prospecto: el lote estuvo bloqueado, hubo gasto y hubo expectativa contabilizada. Por eso existe el motivo de pérdida <b style="font-weight:500">canceló después de firmar contrato</b>, separado de los demás.</p>
+<p class="txt">Esta definición es de QERCIA, donde la escrituración va casi pegada al contrato. En un proyecto vertical como Átiko o Pórtiko la escrituración llega meses después, por la obra: ahí la brecha entre venta y venta efectiva es estructural y no se puede leer como fuga. El mismo tablero en un vertical necesita otro criterio.</p>
+<p class="txt">En QERCIA hay un condicionante propio: la escrituración depende de la liberación del gravamen del lote. Un lote puede tener contrato firmado y no poder escriturar todavía — por eso el candado de <code>se_puede_separar</code> impide mover una negociación a Separación mientras jurídico no haya resuelto propietario, gravamen y disponibilidad.</p>
+<p class="txt"><b style="font-weight:500">Lo que este tablero no define:</b> en qué momento se devenga y se paga la comisión. Eso lo fija el contrato de servicios, no este sistema.</p>
+
 <h3>Vocabulario</h3>
 <table>
 <tr><th style="width:150px">Término</th><th>Definición operativa</th></tr>
@@ -499,7 +534,18 @@ let ME = null;               // {id,nombre,email,color,rol,puede_reasignar_caduc
 let ETAPAS = [], MOTIVOS = [], FORMAS_PAGO = [], ORIGENES = [], LOTES = [], EQUIPO = [];
 let NEGS = [];
 let fCancha = "todas", verQuien = "todas", fSeguim = "todas", fHoyAsesor = "todos";
+let fCanal = "todos", fRefPor = "todos", fPer = "todo", fD1 = "", fD2 = "";
 let abierto = {}; // columnas del Tablero con "ver las otras N" activado
+
+// ---------- periodo de entrada: usa creado_en, no fecha_asignacion (esa se resetea al reasignar) ----------
+function enPeriodo(n){
+  const f = (n.creado_en || "").slice(0,10);
+  if (fPer === "rango") return (!fD1 || f >= fD1) && (!fD2 || f <= fD2);
+  if (fPer === "todo") return true;
+  if (fPer === "7") return dias(f) <= 7;
+  if (fPer === "30") return dias(f) <= 30;
+  return f.slice(0,7) === fPer; // "YYYY-MM"
+}
 
 function puedeReasignar(){ return ME && (ME.rol === "admin" || ME.puede_reasignar_caducados); }
 function negsVisibles(){ // sin filtrar por cancha/seguimiento/perdida — para el embudo y para Perdidas
@@ -622,16 +668,23 @@ async function cargarCatalogos(){
   ORIGENES.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.texto; o.textContent=x.texto; selO.appendChild(o); });
   const selP = document.getElementById("c-pago"); selP.innerHTML = "";
   FORMAS_PAGO.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.texto; o.textContent=x.texto; selP.appendChild(o); });
-  const selL = document.getElementById("c-lote");
-  LOTES.slice().sort((a,b)=>a.clave.localeCompare(b.clave)).forEach(function(x){
-    const o=document.createElement("option"); o.value=x.clave;
-    o.textContent = x.clave+" · "+(x.tipologia||"-")+" · "+(x.m2||"?")+" m²"+(x.se_puede_separar?"":" · aún no se puede separar");
-    selL.appendChild(o);
-  });
   if (esAdmin()){
     const selA = document.getElementById("c-asesor"); selA.innerHTML = "";
     EQUIPO.filter(x=>x.activo).forEach(function(x){ const o=document.createElement("option"); o.value=x.id; o.textContent=x.nombre; selA.appendChild(o); });
+    document.getElementById("f-verquien").innerHTML = '<button class="chip" aria-pressed="true" data-v="todas">Todo el equipo</button>' +
+      EQUIPO.filter(x=>x.activo).map(a => '<button class="chip" aria-pressed="false" data-v="'+a.id+'"><i class="punto" style="background:'+a.color+'"></i>'+a.nombre+'</button>').join("");
   }
+  document.getElementById("f-refpor").innerHTML = '<button class="chip" aria-pressed="true" data-v="todos">Cualquiera</button>' +
+    EQUIPO.map(a => '<button class="chip" aria-pressed="false" data-v="'+a.nombre+'">'+a.nombre+'</button>').join("");
+
+  // manzana → lote en cascada (Captura)
+  const selM = document.getElementById("c-manzana");
+  if (selM) {
+    const manzanas = Array.from(new Set(LOTES.map(x => x.manzana).filter(Boolean))).sort();
+    selM.innerHTML = '<option value="">Sin definir</option>' + manzanas.map(m => '<option value="'+m+'">'+m+'</option>').join("");
+  }
+  pintarLotesPorManzana();
+
   document.getElementById("c-fcontacto").value = hoy();
   pintarCamposOrigen();
   pintarInfoLote();
@@ -651,6 +704,23 @@ function pintarCamposOrigen(){
   document.getElementById("w-fbroker").hidden = origen !== "Bróker externo";
 }
 document.getElementById("c-origen").addEventListener("change", pintarCamposOrigen);
+
+// ---------- manzana → lote en cascada: primero eliges manzana, abajo se filtran sus lotes ----------
+function pintarLotesPorManzana(){
+  const selM = document.getElementById("c-manzana"), selL = document.getElementById("c-lote");
+  if (!selM || !selL) return;
+  const previo = selL.value, m = selM.value;
+  selL.innerHTML = '<option value="">' + (m ? "Sin definir" : "Elige manzana primero") + '</option>';
+  LOTES.filter(x => !m || x.manzana === m).slice().sort((a,b)=>a.clave.localeCompare(b.clave)).forEach(function(x){
+    const o=document.createElement("option"); o.value=x.clave;
+    o.textContent = x.clave+" · "+(x.tipologia||"-")+" · "+(x.m2||"?")+" m²"+(x.se_puede_separar?"":" · aún no se puede separar");
+    selL.appendChild(o);
+  });
+  if (previo && Array.from(selL.options).some(o => o.value === previo)) selL.value = previo;
+  pintarInfoLote();
+}
+const selManzana = document.getElementById("c-manzana");
+if (selManzana) selManzana.addEventListener("change", pintarLotesPorManzana);
 
 function pintarInfoLote(){
   const l = lote(document.getElementById("c-lote").value);
@@ -710,14 +780,39 @@ function grupo(id, set){
 grupo("f-cancha", v => fCancha = v);
 grupo("f-verquien", v => verQuien = v);
 grupo("f-seguim", v => fSeguim = v);
+grupo("f-canal", v => fCanal = v);
+grupo("f-refpor", v => fRefPor = v);
+grupo("f-per", function(v){
+  fPer = v; fD1 = ""; fD2 = "";
+  document.getElementById("p-d1").value = ""; document.getElementById("p-d2").value = "";
+  document.getElementById("p-clr").hidden = true;
+});
+(function(){
+  const d1 = document.getElementById("p-d1"), d2 = document.getElementById("p-d2"), clr = document.getElementById("p-clr");
+  function aplica(){
+    fD1 = d1.value; fD2 = d2.value;
+    const hay = !!(fD1 || fD2);
+    clr.hidden = !hay;
+    fPer = hay ? "rango" : "todo";
+    Array.from(document.getElementById("f-per").children).forEach(x => x.setAttribute("aria-pressed", !hay && x.dataset.v === "todo"));
+    render();
+  }
+  d1.addEventListener("change", aplica);
+  d2.addEventListener("change", aplica);
+  clr.addEventListener("click", function(){ d1.value = ""; d2.value = ""; aplica(); });
+})();
 
 // ---------- tablero ----------
 // Registro y Contactado (etapas 0 y 1) no se dibujan aquí: viven en Bandeja.
 function visibles(){
   let v = NEGS.filter(n => !n.perdida && n.etapa >= 2);
-  if (!esAdmin() || verQuien === "mias") v = v.filter(n => n.asesor_id === ME.id);
+  if (!esAdmin()) v = v.filter(n => n.asesor_id === ME.id);
+  else if (verQuien !== "todas") v = v.filter(n => n.asesor_id === verQuien);
   if (fCancha !== "todas") v = v.filter(n => n.cancha === fCancha);
   if (fSeguim !== "todas") v = v.filter(n => seguim(n) === fSeguim);
+  if (fCanal !== "todos") v = v.filter(n => canal(n) === fCanal);
+  if (fRefPor !== "todos") v = v.filter(n => n.refquien === fRefPor);
+  if (fPer !== "todo") v = v.filter(enPeriodo);
   return v;
 }
 
@@ -740,7 +835,21 @@ function tarjeta(n){
     '<div class="duenio"><i class="punto" style="background:' + col + '"></i>' + (eq?eq.nombre:"—") + ' · ' + dias(n.creado_en.slice(0,10)) + ' d</div></div>';
 }
 
+// ---------- aviso automático arriba del Tablero: resumen de una línea, se calcula solo ----------
+function avisos(){
+  const activas = negsVisibles().filter(n => !n.perdida);
+  const nCalif = activas.filter(n => n.etapa >= 2).length;
+  const nBandeja = activas.length - nCalif;
+  const sinCanal = activas.filter(n => canal(n) === "X").length;
+  document.getElementById("aviso-tab").innerHTML =
+    '<b>' + activas.length + ' negociaciones' + (esAdmin() ? '' : ' tuyas') + ' activas.</b> ' +
+    nCalif + (nCalif === 1 ? ' está calificada y aparece en este tablero' : ' están calificadas y aparecen en este tablero') +
+    (nBandeja ? '; las otras ' + nBandeja + ' viven en la pestaña Bandeja porque todavía son Registro o Contactado.' : '.') +
+    (sinCanal ? ' El canal está sin determinar en ' + sinCanal + ' de ' + activas.length + '.' : '');
+}
+
 function render(){
+  avisos();
   const v = visibles();
   document.getElementById("board").innerHTML = ETAPAS.filter(et => et.id >= 2 && et.id !== ETAPA_PERDIDO).map(function(et){
     const items = v.filter(n => n.etapa === et.id);
@@ -932,6 +1041,7 @@ async function abrir(id, modo){
         competidor: document.getElementById("p-comp").value.trim(),
         recontactar: document.getElementById("p-fecha").value || null,
         etapa_muerte: n.etapa,
+        actualizado_en: new Date().toISOString(),
       }).eq("id", n.id);
       await sb.from("bitacora").insert({ negociacion_id: n.id, texto: "Perdida · " + r.value + " · " + obj, etapa: n.etapa, cancha: n.cancha });
       cerrar();
@@ -995,7 +1105,34 @@ async function abrir(id, modo){
 }
 
 // ---------- perdidas ----------
+// ---------- perdidas por asesor, últimos 60 días: usa actualizado_en como fecha de baja ----------
+// (las cargadas por Excel no tienen fecha de baja propia y caen fuera del corte, como con Enrique)
+function barrasAsesor60(){
+  const corte = new Date(Date.now() - 60*86400000).toISOString().slice(0,10);
+  const base = NEGS.filter(n => esAdmin() || n.asesor_id === ME.id);
+  const fPerd = n => (n.actualizado_en || n.creado_en || "").slice(0,10);
+  const p60 = base.filter(n => n.perdida && fPerd(n) >= corte);
+  const activas = base.filter(n => !n.perdida);
+  const m = {};
+  EQUIPO.forEach(function(a){
+    const per = p60.filter(n => n.asesor_id === a.id).length;
+    const viv = activas.filter(n => n.asesor_id === a.id).length;
+    if (per || viv) m[a.nombre] = {per: per, tot: per + viv, color: a.color};
+  });
+  const ks = Object.keys(m).sort((x,y) => m[y].per - m[x].per);
+  const max = Math.max(1, ...ks.map(k => m[k].per));
+  document.getElementById("g-asesor60").innerHTML = ks.length
+    ? ks.map(function(k){
+        const pct = m[k].tot ? Math.round(m[k].per / m[k].tot * 100) : 0;
+        return '<div class="b"><span class="et"><i class="punto" style="background:' + m[k].color + ';display:inline-block;margin-right:6px"></i>' + k + '</span>' +
+          '<span class="bar" style="width:' + Math.round(m[k].per / max * 240) + 'px"></span>' +
+          '<span class="c">' + m[k].per + ' de ' + m[k].tot + ' · ' + pct + '%</span></div>';
+      }).join("")
+    : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada perdido en los últimos 60 días.</p>';
+}
+
 async function perdidas(){
+  barrasAsesor60();
   const todas = NEGS.filter(n => n.perdida && (esAdmin() || n.asesor_id === ME.id));
   const cont = document.getElementById("l-perdidas");
   if (!todas.length) {
