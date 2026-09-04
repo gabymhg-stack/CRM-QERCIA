@@ -80,7 +80,7 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .pipe-kpi .kl{display:block;font-size:11px;color:var(--tinta-3);margin-top:3px;line-height:1.4}
 .pipe-kpi .acc{background:#F3F6EC}
 .pipe-kpi .acc .kn{color:var(--verde)}
-.pipe-h,.pipe-f{display:grid;grid-template-columns:minmax(190px,1.5fr) minmax(200px,2.4fr) 60px 52px 48px 84px 46px 42px;gap:0 12px;align-items:center}
+.pipe-h,.pipe-f{display:grid;grid-template-columns:minmax(190px,1.5fr) minmax(200px,2.2fr) 60px 92px 52px 48px 84px 46px 42px;gap:0 12px;align-items:center}
 .pipe-h{padding:0 6px 6px;border-bottom:1px solid var(--linea-fuerte)}
 .pipe-h span{font-size:10px;color:var(--tinta-3);letter-spacing:.06em;text-transform:uppercase}
 .pipe-h .r,.pipe-f .r{text-align:right}
@@ -100,6 +100,14 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .c-lead .b i{background:var(--lead)} .c-pipe .b i{background:var(--pipe)} .c-best .b i{background:var(--best)}
 .c-commit .b i{background:var(--commit)} .c-closed .b i{background:var(--closed)}
 .pipe-f .n,.pipe-f .p{font-size:12px;color:var(--tinta-3);font-variant-numeric:tabular-nums}
+.pipe-f .n i{display:block;font-size:9.5px;color:var(--tinta-3);font-style:normal;font-weight:400}
+.pipe-f .pctreg{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:12px;font-variant-numeric:tabular-nums}
+.bd{font-size:9px;font-style:normal;white-space:nowrap;padding:1px 4px;border-radius:2px;margin-top:1px}
+.bd.sinref{color:var(--tinta-3);background:transparent;padding:0}
+.bd-bajo{background:var(--nuestra-bg);color:var(--nuestra)}
+.bd-ok{background:var(--verde-bg);color:var(--verde)}
+.bd-alto{background:#FDF6E3;color:#8A5A0B}
+.bd-top{background:#EAF2FB;color:#1B3FE0}
 .pipe-f.vac{opacity:.5}
 .pipe-nota{font-size:10.5px;color:var(--tinta-3);margin-top:9px;line-height:1.6;max-width:100ch}
 @media(max-width:1150px){.pipe-h{display:none}.pipe-f{grid-template-columns:1fr auto;gap:4px 10px}.pipe-f .b{grid-column:span 2}}
@@ -506,6 +514,25 @@ const CATN = {
   commit:{t:"Commit",    d:"hay dinero puesto"},
   closed:{t:"Cerrado",   d:"escriturado"}
 };
+// ---------- bandas publicadas de la industria: solo hay referencia seria para dos tramos ----------
+// (registro → calificado, registro → venta). Son benchmarks de EEUU (NAR/Inman/REDX/Zillow) — no
+// están calibrados para Monterrey/La Paz, se traen como referencia externa mientras QERCIA no
+// tenga histórico propio suficiente para construir el suyo. Ver nota completa al pie del embudo.
+const BANDA = {
+  2: { lo: 10, hi: 15, top: 30, m: "registro → calificado",
+       n: "Lead-to-appointment: promedio 10–15%, top producers 25–30%." },
+  7: { lo: 2,  hi: 5,  top: 12, m: "registro → venta",
+       n: "Lead-to-close: 2–5% mezclando fuentes, 0.4–1.2% si es lead de portal o pauta, 1–3% en residencial." },
+};
+const ANCLA_EMBUDO = { 1: "sin referencia pública · el ancla es de esfuerzo: 8 a 12 intentos de contacto" };
+function banda(i, n, tot){
+  const b = BANDA[i];
+  if (!b) return ANCLA_EMBUDO[i] ? '<em class="bd sinref" title="' + ANCLA_EMBUDO[i] + '">sin referencia</em>' : '';
+  const real = tot ? n / tot * 100 : 0;
+  const est = real < b.lo ? "bajo" : (real >= b.top ? "top" : (real > b.hi ? "alto" : "ok"));
+  const txt = {bajo:"debajo del sano", ok:"en el sano", alto:"arriba del sano", top:"nivel top"}[est];
+  return '<em class="bd bd-' + est + '" title="' + b.m + ' · ' + b.n + '">sano ' + b.lo + '–' + b.hi + '% · ' + txt + '</em>';
+}
 // ---------- canal: quién trajo la negociación (distinto de Origen, que dice el medio) ----------
 const CANAL = {
   I: {t:"Interna",  d:"La generó POP con su propia pauta, portal, caseta o sitio."},
@@ -947,7 +974,7 @@ function pintaEmbudo(){
     '<div class="k acc"><span class="kn">$' + mdp(vPond) + '<i>MDP</i></span><span class="kl">pipeline ponderado por probabilidad</span></div>' +
     '</div>';
   h += '<div class="pipe-h"><span>Etapa</span><span>Alcanzaron</span><span class="r">En etapa</span>' +
-       '<span class="r">Conv.</span><span class="r">Prob.</span><span class="r">Ponderado</span><span class="r">Días</span><span class="r">Fuga</span></div>';
+       '<span class="r">% desde registro</span><span class="r">Conv.</span><span class="r">Prob.</span><span class="r">Ponderado</span><span class="r">Días</span><span class="r">Fuga</span></div>';
   let catPrev = "";
   for (let i = 0; i <= 8; i++) {
     const c = CAT[i];
@@ -961,18 +988,29 @@ function pintaEmbudo(){
     const cv = i > 0 && alc(i-1).length ? Math.round(n / alc(i-1).length * 100) : null;
     const vp = valor(enEt(i)) * PROB[i] / 100;
     const d = dur(i), fu = perdEt(i);
-    const etNom = (ETAPAS.find(e=>e.id===i)||{}).nombre || "—";
+    const et = ETAPAS.find(e=>e.id===i) || {};
     h += '<div class="pipe-f c-' + c + (n ? '' : ' vac') + '">' +
-      '<span class="e"><b>' + etNom + '</b></span>' +
+      '<span class="e"><b>' + (et.nombre || "—") + '</b><em>' + (et.meta || "") + '</em></span>' +
       '<span class="b"><i style="width:' + Math.max(n?1.5:0, bw) + '%"></i><u>' + n + '</u></span>' +
       '<span class="r n">' + (cur || '·') + '</span>' +
-      '<span class="r n">' + (cv === null ? '' : cv + '%') + '</span>' +
+      '<span class="r pctreg">' + Math.round(n / baseLead * 100) + '%' + banda(i, n, baseLead) + '</span>' +
+      '<span class="r n">' + (cv === null ? '' : cv + '%<i>' + (cv < 100 ? 'cae ' + (100 - cv) + '%' : '') + '</i>') + '</span>' +
       '<span class="r p">' + PROB[i] + '%</span>' +
       '<span class="r n">' + (cur && PROB[i] ? '$' + mdp(vp) : '·') + '</span>' +
       '<span class="r n">' + (d === null ? '·' : d) + '</span>' +
       '<span class="r f" style="color:var(--nuestra)">' + (fu ? fu : '') + '</span></div>';
   }
   h += '<div class="pipe-nota">Ponderado = ticket × probabilidad de la etapa. Las negociaciones sin lote se valúan al ticket promedio del inventario, $' + mdp(TICKET_PROM) + ' MDP, y se corrigen solas en cuanto se les asigna lote.</div>';
+  h += '<div class="pipe-nota"><b>De dónde salen las bandas "sano".</b> Registro → calificado usa ' +
+    '<i>lead-to-appointment</i>: promedio de industria 10–15%, top producers 25–30%. Registro → venta usa ' +
+    '<i>lead-to-close</i>: 2–5% mezclando fuentes, 0.4–1.2% cuando el lead viene de portal o pauta, 1–3% en ' +
+    'residencial. Compilado de NAR vía Inman, REDX 2026, Conversion Realtor 2026 y Jamil Academy — Zillow usa ' +
+    '4% como supuesto en su calculadora de ROI y 10% como meta de programa para socios. Son benchmarks de bienes ' +
+    'raíces residencial en EEUU, <b>no calibrados para Monterrey ni La Paz</b> — se muestran como referencia ' +
+    'externa mientras no haya histórico propio de QERCIA suficiente para construir una banda interna. Los tramos ' +
+    'intermedios (visita→cotización, cotización→negociación, negociación→separación) y registro→contactado no ' +
+    'tienen banda publicada seria — para contactado el único ancla que existe es de esfuerzo: convertir un lead ' +
+    'de internet a cita toma 8 a 12 intentos.</div>';
   h += '</div>';
   document.getElementById("embudo").innerHTML = h;
 }
