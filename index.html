@@ -986,7 +986,6 @@ function pintaEmbudo(){
   const ETCOLOR = ["#D0392A","#DE5A26","#E77F1E","#EDA417","#E4C31A","#BFC61F","#93BE22","#5FB02B","#00A651"];
 
   const baseLead = Math.max(1, alc(0).length);
-  const baseOpp = Math.max(1, alc(2).length);
   const vAbierto = valor(todo.filter(n => !n.perdida && n.etapa >= 2));
   const vPond = todo.filter(n => !n.perdida && n.etapa >= 2).reduce((a,n) => a + valorNeg(n) * PROB[n.etapa] / 100, 0);
   const convLO = alc(0).length ? (alc(2).length / alc(0).length * 100) : 0;
@@ -1006,7 +1005,10 @@ function pintaEmbudo(){
   for (let i = 0; i <= 8; i++) {
     const c = CAT[i];
     const A = alc(i), n = A.length, cur = enEt(i).length;
-    const bw = Math.max(n ? 1.5 : 0, Math.round(n / (c === "lead" ? baseLead : baseOpp) * 100));
+    // una sola escala para las 9 etapas: el ancho es el % real contra el total de registros, no
+    // contra la etapa anterior — así el embudo baja de mayor a menor de verdad, sin que Prospecto
+    // "rebote" a un ancho grande solo porque cambió la base de cálculo.
+    const bw = Math.max(n ? 1.5 : 0, Math.round(n / baseLead * 100));
     const cv = i > 0 && alc(i-1).length ? Math.round(n / alc(i-1).length * 100) : null;
     const vp = valor(enEt(i)) * PROB[i] / 100;
     const d = dur(i), fu = perdEt(i);
@@ -1017,8 +1019,7 @@ function pintaEmbudo(){
   filas.forEach(function(f, idx){
     if (f.c !== catPrev) {
       catPrev = f.c;
-      h += '<div class="pipe-cat c-' + f.c + '"><b>' + CATN[f.c].t + '</b><em>' + CATN[f.c].d + '</em>' +
-           (f.c === "pipe" ? '<span class="esc">la barra cambia de escala: aquí la base son las ' + alc(2).length + ' oportunidades</span>' : '') + '</div>';
+      h += '<div class="pipe-cat c-' + f.c + '"><b>' + CATN[f.c].t + '</b><em>' + CATN[f.c].d + '</em></div>';
     }
     // se angosta hacia el ancho de la siguiente fila, como un embudo real — no un dibujo fijo. el
     // recorte se reparte parejo entre los dos lados (como el de Enrique) y la barra se centra en
