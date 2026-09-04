@@ -123,6 +123,9 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .bnd-cad{color:var(--nuestra);font-weight:500}
 .bnd-acc{display:flex;gap:6px;flex-wrap:wrap}
 .bnd-acc .btn{padding:5px 10px;font-size:12.5px}
+.bnd-sub h4{font-size:12.5px;font-weight:500;margin:16px 0 3px;color:var(--tinta-2)}
+.bnd-sub .mini{color:var(--tinta-3);margin-bottom:4px}
+.bnd-prev{color:var(--tinta-3)}
 .bnd-reasig{display:flex;gap:6px;align-items:center}
 .bnd-reasig select{font-family:inherit;font-size:12.5px;padding:5px 6px;border:1px solid var(--linea-fuerte);border-radius:2px}
 /* ---------- Hoy ---------- */
@@ -528,6 +531,27 @@ function caducado(n){
   if (n.etapa !== 0 || n.perdida) return false;
   return (n.intentos||0) >= MAX_INTENTOS || dias(n.fecha_asignacion) > DIAS_CADUCA;
 }
+// ---------- nivel: agrupación gruesa de la etapa (Registro / Contactado / Negociación calificada) ----------
+function nivel(n){
+  if (n.etapa === 0) return "Registro";
+  if (n.etapa === 1) return (ETAPAS.find(e=>e.id===1)||{}).nombre || "Contactado";
+  return "Negociación";
+}
+// ---------- sub-estatus de un Registro (etapa 0): solo aplica ahí, igual que caducado() ----------
+function subEstatusRegistro(n){
+  if (n.etapa !== 0 || n.perdida) return "No aplica";
+  if (caducado(n)) return "Caducado";
+  if (n.asesor_id === null) return "Sin asignar";
+  return (n.intentos||0) > 0 ? "En intentos" : "Asignado sin intentar";
+}
+// ---------- semana de entrada (para Desglose) ----------
+function semanaEntrada(n){
+  if (!n.creado_en) return "—";
+  const d = new Date(n.creado_en.slice(0,10) + "T12:00:00");
+  const j = new Date(d.getFullYear(), 0, 1);
+  const w = Math.ceil(((d - j) / 86400000 + j.getDay() + 1) / 7);
+  return d.getFullYear() + " sem " + (w < 10 ? "0" + w : w);
+}
 const TOPE = 8; // tarjetas visibles por columna antes de plegar
 
 let ME = null;               // {id,nombre,email,color,rol,puede_reasignar_caducados}
@@ -565,6 +589,20 @@ const DIMENSIONES = {
   motivo:   { t: "Motivo de pérdida",  f: n => n.motivo_perdida || "Sin motivo" },
   pago:     { t: "Forma de pago",      f: n => n.forma_pago || "Sin definir" },
   mes:      { t: "Mes de entrada",     f: n => n.creado_en ? n.creado_en.slice(0,7) : "—" },
+  antiguedad: { t: "Días sin contacto", f: n => {
+    if (!n.fecha_ultimo_contacto) return "Sin fecha";
+    const d = dias(n.fecha_ultimo_contacto);
+    return d <= 7 ? "0 a 7" : d <= 14 ? "8 a 14" : d <= 21 ? "15 a 21" : "Más de 21";
+  }},
+  nivel:      { t: "Nivel",             f: n => nivel(n) },
+  semana:     { t: "Semana de entrada", f: n => semanaEntrada(n) },
+  enSistema:  { t: "Días en el sistema", f: n => {
+    if (!n.creado_en) return "Sin fecha";
+    const d = dias(n.creado_en.slice(0,10));
+    return d <= 7 ? "0 a 7" : d <= 14 ? "8 a 14" : d <= 30 ? "15 a 30" : d <= 60 ? "31 a 60" : "Más de 60";
+  }},
+  subestatus: { t: "Sub-estatus del registro", f: n => subEstatusRegistro(n) },
+  intentos:   { t: "Intentos",          f: n => n.etapa === 0 && !n.perdida ? (n.intentos||0) + " de " + MAX_INTENTOS : "No aplica" },
 };
 const COLORES_AN = ["#B03A22","#1B3FE0","#8A5A0B","#3B6D11","#A01236","#26D2F5","#B07CF0","#5A554D"];
 function colorAn(i){ return COLORES_AN[i % COLORES_AN.length]; }
@@ -1212,7 +1250,7 @@ async function bandejaContacto(id){
 async function bandejaQuitarDueno(id){
   const n = NEGS.find(x=>x.id===id); if (!n) return;
   if (!confirm("¿Quitarle el dueño a " + n.cliente + "? Pasa a la bolsa de sin dueño.")) return;
-  await sb.from("negociaciones").update({ asesor_id: null }).eq("id", id);
+  await sb.from("negociaciones").update({ asesor_id: null, asesor_previo: n.asesor_id }).eq("id", id);
   await sb.from("bitacora").insert({ negociacion_id: id, texto: "Caducó — pierde dueño", etapa: n.etapa, cancha: n.cancha });
   await cargarNegociaciones(); pintaBandeja();
 }
@@ -1224,28 +1262,52 @@ async function bandejaAsignar(id, nuevoId){
   await cargarNegociaciones(); pintaBandeja();
 }
 
-function filaBandeja(n, conAcciones){
+function filaBandeja(n, conAcciones, extra){
   const dAsig = dias(n.fecha_asignacion);
   const cad = caducado(n);
   return '<div class="bnd-row">' +
-    '<div><b>' + n.cliente + '</b><div class="mini">' + (n.telefono || '') + '</div></div>' +
+    '<div><b>' + n.cliente + '</b><div class="mini">' + (n.telefono || '') + (extra ? ' · <span class="bnd-prev">' + extra + '</span>' : '') + '</div></div>' +
     '<div class="mini">' + (ETAPAS.find(e=>e.id===n.etapa)||{}).nombre + '</div>' +
     '<div class="mini">' + (n.intentos||0) + ' intento' + (n.intentos===1?'':'s') + '</div>' +
     '<div class="mini' + (cad ? ' bnd-cad' : '') + '">' + dAsig + ' d' + (cad ? ' · caducado' : '') + '</div>' +
     '<div class="bnd-acc">' + conAcciones + '</div></div>';
 }
 
+const SUBS_REGISTRO = ["Asignado sin intentar", "En intentos", "Caducado"];
+const DESC_SUB = {
+  "Asignado sin intentar": "Tienen dueño y ni un solo intento registrado.",
+  "En intentos": "Ya se intentó contactarlos y todavía no responden.",
+  "Caducado": "Se agotó el plazo o los intentos. Hay que quitarles el dueño para que vuelvan a la bolsa de sin dueño."
+};
+
 function pintaBandeja(){
-  const propios = NEGS.filter(n => !n.perdida && n.etapa <= 1 && n.asesor_id === ME.id);
-  document.getElementById("bnd-propios").innerHTML = propios.length
-    ? propios.map(function(n){
-        const cad = caducado(n);
-        let acc = '<button class="btn sec" data-int="' + n.id + '">+1 intento</button>';
-        if (n.etapa === 0) acc += '<button class="btn sec" data-cont="' + n.id + '">Contactó</button>';
+  const registros = NEGS.filter(n => !n.perdida && n.etapa === 0 && n.asesor_id === ME.id);
+  const contactados = NEGS.filter(n => !n.perdida && n.etapa === 1 && n.asesor_id === ME.id);
+
+  const porSub = {}; SUBS_REGISTRO.forEach(k => porSub[k] = []);
+  registros.forEach(n => porSub[subEstatusRegistro(n)].push(n));
+
+  let h = "";
+  SUBS_REGISTRO.forEach(function(k){
+    const arr = porSub[k]; if (!arr.length) return;
+    h += '<div class="bnd-sub"><h4>' + k + ' · ' + arr.length + '</h4><p class="txt mini">' + DESC_SUB[k] + '</p>' +
+      arr.map(function(n){
+        const cad = k === "Caducado";
+        let acc = '<button class="btn sec" data-int="' + n.id + '">+1 intento</button>' +
+          '<button class="btn sec" data-cont="' + n.id + '">Contactó</button>';
         if (cad) acc += '<button class="btn danger" data-quitar="' + n.id + '">Quitar dueño</button>';
         return filaBandeja(n, acc);
-      }).join("")
-    : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada en Registro o Contactado por ahora.</p>';
+      }).join("") + '</div>';
+  });
+  if (contactados.length) {
+    h += '<div class="bnd-sub"><h4>Contactados · ' + contactados.length + '</h4>' +
+      '<p class="txt mini">Ya hubo conversación de dos vías. Falta calificar para pasar al Tablero.</p>' +
+      contactados.map(function(n){
+        return filaBandeja(n, '<button class="btn sec" data-int="' + n.id + '">+1 intento</button>');
+      }).join("") + '</div>';
+  }
+  document.getElementById("bnd-propios").innerHTML = h ||
+    '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada en Registro o Contactado por ahora.</p>';
 
   const wrap = document.getElementById("bnd-sindueno-wrap");
   wrap.hidden = !puedeReasignar();
@@ -1256,7 +1318,8 @@ function pintaBandeja(){
       ? sind.map(function(n){
           const acc = '<span class="bnd-reasig"><select data-sel="' + n.id + '"><option value="">Reasignar a…</option>' + opciones + '</select>' +
             '<button class="btn sec" data-asig="' + n.id + '">Asignar</button></span>';
-          return filaBandeja(n, acc);
+          const prev = n.asesor_previo ? "antes: " + ((eqById(n.asesor_previo)||{}).nombre || "—") : "";
+          return filaBandeja(n, acc, prev);
         }).join("")
       : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada sin dueño por ahora.</p>';
   }
