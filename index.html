@@ -99,10 +99,10 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .pipe-f .e b{font-size:13px;font-weight:500}
 .pipe-f .e em{font-size:10px;color:var(--tinta-3);font-style:normal}
 .pipe-f .b{display:flex;align-items:center;gap:9px}
-.pipe-f .b i{height:22px;display:block;min-width:2px;transition:width .2s}
+.pipe-f .bwrap{flex:1;display:flex;justify-content:center;min-width:0}
+.pipe-f .b i{height:26px;display:block;min-width:2px;transition:width .2s;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.28),inset 0 -3px 0 rgba(0,0,0,.10)}
 .pipe-f .b u{font-size:13px;font-weight:600;text-decoration:none;font-variant-numeric:tabular-nums}
-.c-lead .b i{background:var(--lead)} .c-pipe .b i{background:var(--pipe)} .c-best .b i{background:var(--best)}
-.c-commit .b i{background:var(--commit)} .c-closed .b i{background:var(--closed)}
 .pipe-f .n,.pipe-f .p{font-size:12px;color:var(--tinta-3);font-variant-numeric:tabular-nums}
 .pipe-f .n i{display:block;font-size:9.5px;color:var(--tinta-3);font-style:normal;font-weight:400}
 .pipe-f .pctreg{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:12px;font-variant-numeric:tabular-nums}
@@ -981,6 +981,10 @@ function pintaEmbudo(){
     return b.length % 2 ? b[m] : Math.round((b[m-1]+b[m])/2);
   };
 
+  // el mismo degradado rojo→verde por etapa que usa el sandbox de Enrique — puramente visual
+  // (no cambia el ancho, que sigue siendo el real de cada etapa, no una forma fija)
+  const ETCOLOR = ["#D0392A","#DE5A26","#E77F1E","#EDA417","#E4C31A","#BFC61F","#93BE22","#5FB02B","#00A651"];
+
   const baseLead = Math.max(1, alc(0).length);
   const baseOpp = Math.max(1, alc(2).length);
   const vAbierto = valor(todo.filter(n => !n.perdida && n.etapa >= 2));
@@ -1016,17 +1020,16 @@ function pintaEmbudo(){
       h += '<div class="pipe-cat c-' + f.c + '"><b>' + CATN[f.c].t + '</b><em>' + CATN[f.c].d + '</em>' +
            (f.c === "pipe" ? '<span class="esc">la barra cambia de escala: aquí la base son las ' + alc(2).length + ' oportunidades</span>' : '') + '</div>';
     }
-    // se angosta hacia el ancho de la siguiente fila, como un embudo real — no un dibujo fijo.
-    // el recorte va solo del lado derecho (el izquierdo se queda fijo en 0) para que el borde de
-    // abajo de esta fila caiga exactamente donde empieza la de abajo — si no, al angostar parejo
-    // de los dos lados cada fila queda centrada en su propio eje y se ve como reloj de arena, no
-    // como un embudo continuo.
+    // se angosta hacia el ancho de la siguiente fila, como un embudo real — no un dibujo fijo. el
+    // recorte se reparte parejo entre los dos lados (como el de Enrique) y la barra se centra en
+    // su columna (.bwrap), no pegada a la izquierda — así el borde de abajo de esta fila cae
+    // exactamente donde empieza la de abajo, sin importar el ancho de cada una.
     const sig = filas[idx+1];
     const anchoSig = sig ? Math.min(sig.bw, f.bw) : f.bw;
-    const rec = f.bw ? Math.max(0, (f.bw - anchoSig) / f.bw * 100).toFixed(2) : 0;
+    const rec = f.bw ? Math.max(0, (f.bw - anchoSig) / 2 / f.bw * 100).toFixed(2) : 0;
     h += '<div class="pipe-f c-' + f.c + (f.n ? '' : ' vac') + '">' +
       '<span class="e"><b>' + (f.et.nombre || "—") + '</b><em>' + (f.et.meta || "") + '</em></span>' +
-      '<span class="b"><i style="width:' + f.bw + '%;clip-path:polygon(0 0,100% 0,calc(100% - ' + rec + '%) 100%,0 100%)"></i><u>' + f.n + '</u></span>' +
+      '<span class="b"><span class="bwrap"><i style="width:' + f.bw + '%;background:' + ETCOLOR[f.i] + ';clip-path:polygon(0 0,100% 0,calc(100% - ' + rec + '%) 100%,' + rec + '% 100%)"></i></span><u>' + f.n + '</u></span>' +
       '<span class="r n">' + (f.cur || '·') + '</span>' +
       '<span class="r pctreg">' + Math.round(f.n / baseLead * 100) + '%' + banda(f.i, f.n, baseLead) + '</span>' +
       '<span class="r n">' + (f.cv === null ? '' : f.cv + '%<i>' + (f.cv < 100 ? 'cae ' + (100 - f.cv) + '%' : '') + '</i>') + '</span>' +
