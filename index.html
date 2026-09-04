@@ -56,6 +56,10 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .nombre{font-size:12.5px;font-weight:500;line-height:1.32}
 .unidad{font-size:11.5px;color:var(--tinta-2);margin-top:3px}
 .unidad.sin{color:var(--tinta-3);font-style:italic}
+.canal{font-size:10.5px;color:var(--tinta-2);margin-top:3px;line-height:1.4}
+.canal b{font-weight:500}
+.canal .punto{width:7px;height:7px;display:inline-block;vertical-align:0;margin-right:1px}
+.canal .falta{color:var(--tinta-3);font-style:italic}
 .linea2{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .duenio{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--tinta-2);margin-top:5px}
 .punto{width:9px;height:9px;border-radius:50%;flex:none}
@@ -95,7 +99,7 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .pipe-f .e b{font-size:13px;font-weight:500}
 .pipe-f .e em{font-size:10px;color:var(--tinta-3);font-style:normal}
 .pipe-f .b{display:flex;align-items:center;gap:9px}
-.pipe-f .b i{height:16px;border-radius:2px;display:block;min-width:2px}
+.pipe-f .b i{height:22px;display:block;min-width:2px;transition:width .2s}
 .pipe-f .b u{font-size:13px;font-weight:600;text-decoration:none;font-variant-numeric:tabular-nums}
 .c-lead .b i{background:var(--lead)} .c-pipe .b i{background:var(--pipe)} .c-best .b i{background:var(--best)}
 .c-commit .b i{background:var(--commit)} .c-closed .b i{background:var(--closed)}
@@ -543,11 +547,16 @@ const CANAL = {
 };
 const ORIG_I = ["Meta","Google","Portal inmobiliario","Caseta o visita espontánea"];
 function canal(n){
-  if (n.broker) return "B";
-  if (n.refquien) return "R";
+  if (n.broker || n.origen === "Bróker externo") return "B";
+  if (n.refquien || n.origen === "Referido") return "R";
   if (n.origen === "Propiedad") return "P";
   if (ORIG_I.indexOf(n.origen) >= 0) return "I";
   return "X";
+}
+// ---------- pista corta de "quién refirió", para renglones angostos (Bandeja, Hoy) ----------
+function refHint(n){
+  if (canal(n) !== "R") return "";
+  return n.refquien ? " · refirió " + n.refquien : " · referido, falta quién";
 }
 // ---------- seguimiento: qué tan atendida está (distinto de la etapa y de la cancha) ----------
 function seguim(n){
@@ -635,6 +644,7 @@ const DIMENSIONES = {
   }},
   subestatus: { t: "Sub-estatus del registro", f: n => subEstatusRegistro(n) },
   intentos:   { t: "Intentos",          f: n => n.etapa === 0 && !n.perdida ? (n.intentos||0) + " de " + MAX_INTENTOS : "No aplica" },
+  refPor:     { t: "Quién refirió",     f: n => n.refquien || (n.origen === "Referido" ? "Referido, sin registrar quién" : "No es referido") },
 };
 const COLORES_AN = ["#B03A22","#1B3FE0","#8A5A0B","#3B6D11","#A01236","#26D2F5","#B07CF0","#5A554D"];
 function colorAn(i){ return COLORES_AN[i % COLORES_AN.length]; }
@@ -893,12 +903,23 @@ function tarjeta(n){
   const unidad = l
     ? '<div class="unidad">' + n.lote_clave + ' <span style="color:var(--tinta-3)">· ' + (l.tipologia||"-") + ' · ' + mxn.format(l.m2||0) + ' m²</span></div>'
     : '<div class="unidad sin">Sin lote · ' + (n.origen || "origen sin registrar") + '</div>';
+  const cn = canal(n);
+  const lbr = cn === "B"
+    ? '<div class="canal">Bróker · ' + (n.broker ? (n.agencia ? n.agencia + ' · ' : '') + n.broker : '<i class="falta">falta registrar el bróker</i>') + '</div>'
+    : '';
+  const refEq = n.refquien ? EQUIPO.find(a => a.nombre === n.refquien) : null;
+  const lrf = cn === "R"
+    ? '<div class="canal">' + (n.refquien
+        ? 'Refirió ' + (refEq ? '<i class="punto" style="background:' + refEq.color + '"></i> ' : '') +
+          '<b>' + n.refquien + '</b>' + (n.reftipo ? ' <span style="color:var(--tinta-3)">· ' + n.reftipo + '</span>' : '')
+        : '<i class="falta">falta registrar quién lo refirió</i>') + '</div>'
+    : '';
   const c = dias(n.fecha_ultimo_contacto), r = n.fecha_ultima_respuesta ? dias(n.fecha_ultima_respuesta) : null;
   const reloj = n.cancha === "cliente" && r !== null ? r + ' d sin respuesta' : c + ' d sin contacto';
   const viejo = c >= 8 && n.cancha === "nuestra";
   return '<div class="card" data-id="' + n.id + '" style="border-left-color:' + col + '">' +
     '<span class="canalb" title="' + CANAL[canal(n)].t + '">' + canal(n) + '</span>' +
-    '<div class="nombre">' + n.cliente + '</div>' + unidad +
+    '<div class="nombre">' + n.cliente + '</div>' + unidad + lbr + lrf +
     '<div class="linea2"><span class="pill p-' + n.cancha + '">' + LBL[n.cancha] + '</span>' +
     '<span class="pill ' + (viejo ? "p-viejo" : "p-ok") + '">' + reloj + '</span>' +
     '<span class="seg ' + VIG[seguim(n)] + '">' + seguim(n) + '</span></div>' +
@@ -975,31 +996,41 @@ function pintaEmbudo(){
     '</div>';
   h += '<div class="pipe-h"><span>Etapa</span><span>Alcanzaron</span><span class="r">En etapa</span>' +
        '<span class="r">% desde registro</span><span class="r">Conv.</span><span class="r">Prob.</span><span class="r">Ponderado</span><span class="r">Días</span><span class="r">Fuga</span></div>';
-  let catPrev = "";
+  // primera pasada: junta los datos de cada etapa para poder ver la siguiente y angostar el
+  // embudo visualmente (igual que el de Enrique), pero con el ancho real de cada quien, no fijo.
+  const filas = [];
   for (let i = 0; i <= 8; i++) {
     const c = CAT[i];
-    if (c !== catPrev) {
-      catPrev = c;
-      h += '<div class="pipe-cat c-' + c + '"><b>' + CATN[c].t + '</b><em>' + CATN[c].d + '</em>' +
-           (c === "pipe" ? '<span class="esc">la barra cambia de escala: aquí la base son las ' + alc(2).length + ' oportunidades</span>' : '') + '</div>';
-    }
     const A = alc(i), n = A.length, cur = enEt(i).length;
-    const bw = Math.round(n / (c === "lead" ? baseLead : baseOpp) * 100);
+    const bw = Math.max(n ? 1.5 : 0, Math.round(n / (c === "lead" ? baseLead : baseOpp) * 100));
     const cv = i > 0 && alc(i-1).length ? Math.round(n / alc(i-1).length * 100) : null;
     const vp = valor(enEt(i)) * PROB[i] / 100;
     const d = dur(i), fu = perdEt(i);
     const et = ETAPAS.find(e=>e.id===i) || {};
-    h += '<div class="pipe-f c-' + c + (n ? '' : ' vac') + '">' +
-      '<span class="e"><b>' + (et.nombre || "—") + '</b><em>' + (et.meta || "") + '</em></span>' +
-      '<span class="b"><i style="width:' + Math.max(n?1.5:0, bw) + '%"></i><u>' + n + '</u></span>' +
-      '<span class="r n">' + (cur || '·') + '</span>' +
-      '<span class="r pctreg">' + Math.round(n / baseLead * 100) + '%' + banda(i, n, baseLead) + '</span>' +
-      '<span class="r n">' + (cv === null ? '' : cv + '%<i>' + (cv < 100 ? 'cae ' + (100 - cv) + '%' : '') + '</i>') + '</span>' +
-      '<span class="r p">' + PROB[i] + '%</span>' +
-      '<span class="r n">' + (cur && PROB[i] ? '$' + mdp(vp) : '·') + '</span>' +
-      '<span class="r n">' + (d === null ? '·' : d) + '</span>' +
-      '<span class="r f" style="color:var(--nuestra)">' + (fu ? fu : '') + '</span></div>';
+    filas.push({ i, c, n, cur, bw, cv, vp, d, fu, et });
   }
+  let catPrev = "";
+  filas.forEach(function(f, idx){
+    if (f.c !== catPrev) {
+      catPrev = f.c;
+      h += '<div class="pipe-cat c-' + f.c + '"><b>' + CATN[f.c].t + '</b><em>' + CATN[f.c].d + '</em>' +
+           (f.c === "pipe" ? '<span class="esc">la barra cambia de escala: aquí la base son las ' + alc(2).length + ' oportunidades</span>' : '') + '</div>';
+    }
+    // se angosta hacia el ancho de la siguiente fila, como un embudo real — no un dibujo fijo
+    const sig = filas[idx+1];
+    const anchoSig = sig ? Math.min(sig.bw, f.bw) : f.bw;
+    const rec = f.bw ? Math.max(0, (f.bw - anchoSig) / 2 / f.bw * 100).toFixed(2) : 0;
+    h += '<div class="pipe-f c-' + f.c + (f.n ? '' : ' vac') + '">' +
+      '<span class="e"><b>' + (f.et.nombre || "—") + '</b><em>' + (f.et.meta || "") + '</em></span>' +
+      '<span class="b"><i style="width:' + f.bw + '%;clip-path:polygon(0 0,100% 0,calc(100% - ' + rec + '%) 100%,' + rec + '% 100%)"></i><u>' + f.n + '</u></span>' +
+      '<span class="r n">' + (f.cur || '·') + '</span>' +
+      '<span class="r pctreg">' + Math.round(f.n / baseLead * 100) + '%' + banda(f.i, f.n, baseLead) + '</span>' +
+      '<span class="r n">' + (f.cv === null ? '' : f.cv + '%<i>' + (f.cv < 100 ? 'cae ' + (100 - f.cv) + '%' : '') + '</i>') + '</span>' +
+      '<span class="r p">' + PROB[f.i] + '%</span>' +
+      '<span class="r n">' + (f.cur && PROB[f.i] ? '$' + mdp(f.vp) : '·') + '</span>' +
+      '<span class="r n">' + (f.d === null ? '·' : f.d) + '</span>' +
+      '<span class="r f" style="color:var(--nuestra)">' + (f.fu ? f.fu : '') + '</span></div>';
+  });
   h += '<div class="pipe-nota">Ponderado = ticket × probabilidad de la etapa. Las negociaciones sin lote se valúan al ticket promedio del inventario, $' + mdp(TICKET_PROM) + ' MDP, y se corrigen solas en cuanto se les asigna lote.</div>';
   h += '<div class="pipe-nota"><b>De dónde salen las bandas "sano".</b> Registro → calificado usa ' +
     '<i>lead-to-appointment</i>: promedio de industria 10–15%, top producers 25–30%. Registro → venta usa ' +
@@ -1281,7 +1312,7 @@ function filaHoy(n, badge, cls){
   return '<div class="hoy-row">' +
     '<div class="hoy-info"><b>' + n.cliente + '</b> <span class="seg ' + cls + '">' + badge + '</span>' +
     '<div class="mini">' + (ETAPAS.find(e=>e.id===n.etapa)||{}).nombre + (esAdmin()?' · '+(eq?eq.nombre:"Sin dueño"):'') +
-    ' · ' + (n.siguiente_paso || "sin siguiente paso") + '</div></div>' +
+    ' · ' + (n.siguiente_paso || "sin siguiente paso") + refHint(n) + '</div></div>' +
     '<div class="hoy-acc">' + botonesActo(n.id) + '</div></div>';
 }
 
@@ -1359,7 +1390,7 @@ function filaBandeja(n, conAcciones, extra){
   const dAsig = dias(n.fecha_asignacion);
   const cad = caducado(n);
   return '<div class="bnd-row">' +
-    '<div><b>' + n.cliente + '</b><div class="mini">' + (n.telefono || '') + (extra ? ' · <span class="bnd-prev">' + extra + '</span>' : '') + '</div></div>' +
+    '<div><b>' + n.cliente + '</b><div class="mini">' + (n.telefono || '') + refHint(n) + (extra ? ' · <span class="bnd-prev">' + extra + '</span>' : '') + '</div></div>' +
     '<div class="mini">' + (ETAPAS.find(e=>e.id===n.etapa)||{}).nombre + '</div>' +
     '<div class="mini">' + (n.intentos||0) + ' intento' + (n.intentos===1?'':'s') + '</div>' +
     '<div class="mini' + (cad ? ' bnd-cad' : '') + '">' + dAsig + ' d' + (cad ? ' · caducado' : '') + '</div>' +
