@@ -149,6 +149,25 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .hoy-row .mini{font-size:11px;color:var(--tinta-3)}
 .hoy-acc{display:flex;gap:5px;flex-wrap:wrap;flex:0 1 auto}
 .hoy-acc .btn{padding:4px 8px;font-size:11.5px}
+/* ---------- panel flotante de pendientes ---------- */
+.pend-flot{position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;align-items:flex-end}
+.pend-flot-btn{font-family:inherit;font-size:12.5px;padding:9px 16px;border:1px solid var(--tinta);background:var(--tinta);color:var(--papel);cursor:pointer;border-radius:20px;box-shadow:0 2px 10px rgba(28,26,23,.18)}
+.pend-flot-btn #pend-flot-badge{font-weight:600;margin-right:2px}
+.pend-flot-btn.cero{background:var(--papel-2);color:var(--tinta-3);border-color:var(--linea-fuerte)}
+.pend-flot-panel{margin-bottom:10px;width:340px;max-width:calc(100vw - 32px);max-height:60vh;overflow-y:auto;background:var(--papel-2);border:1px solid var(--linea-fuerte);border-radius:4px;box-shadow:0 6px 24px rgba(28,26,23,.22);padding:12px 14px}
+.pend-flot-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid var(--linea)}
+.pend-flot-head b{font-size:13.5px}
+.pend-grupo h4{font-size:12px;font-weight:500;margin:12px 0 2px;color:var(--tinta-2)}
+.pend-grupo:first-child h4{margin-top:0}
+.pend-grupo .hoy-row{padding:6px 0;font-size:12.5px;gap:4px 10px}
+.pend-grupo .hoy-acc .btn{padding:3px 6px;font-size:10.5px}
+/* ---------- Mis leads ---------- */
+.leads-tabla{width:100%;border-collapse:collapse;font-size:13.5px}
+.leads-tabla th,.leads-tabla td{padding:8px 10px;border-bottom:1px solid var(--linea);text-align:left;vertical-align:middle}
+.leads-tabla th{color:var(--tinta-3);font-weight:500;font-size:11.5px;white-space:nowrap}
+.leads-tabla th.ord{cursor:pointer;user-select:none}
+.leads-tabla th.ord:hover{color:var(--tinta)}
+.leads-tabla select{font-family:inherit;font-size:12.5px;padding:5px 6px;border:1px solid var(--linea-fuerte);border-radius:2px;background:var(--papel-2);color:var(--tinta)}
 /* ---------- Desglose / Tiempos ---------- */
 .anform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 16px;max-width:1100px}
 .anform label{font-size:12px;color:var(--tinta-3);margin-bottom:5px;display:block}
@@ -274,10 +293,22 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
   </div>
 </header>
 
+<!-- panel flotante de pendientes: visible en cualquier pestaña, no solo en Hoy -->
+<div class="pend-flot">
+  <button class="pend-flot-btn" id="pend-flot-toggle" title="Pendientes de hoy">
+    <span id="pend-flot-badge">0</span> pendientes hoy
+  </button>
+  <div class="pend-flot-panel" id="pend-flot-panel" hidden>
+    <div class="pend-flot-head"><b>Pendientes de hoy</b><button class="btn sec" id="pend-flot-vertodo" style="padding:3px 10px;font-size:11.5px">Ver todo en Hoy</button></div>
+    <div id="pend-flot-lista"></div>
+  </div>
+</div>
+
 <div class="tabs" role="tablist">
   <button class="tab" role="tab" aria-selected="true" data-p="p-tablero">Tablero</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-hoy">Hoy</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-bandeja">Bandeja</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p-leads">Mis leads</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-captura">Captura</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-desglose">Desglose</button>
   <button class="tab" role="tab" aria-selected="false" data-p="p-tiempos">Tiempos</button>
@@ -347,6 +378,12 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
     <p class="txt mini">Solo Gabriela, Enrique y Erick pueden ver y reasignar esta bolsa.</p>
     <div id="bnd-sindueno"></div>
   </div>
+</div>
+
+<div class="panel" id="p-leads" hidden>
+  <p class="txt">El 100% de tus negociaciones, en cualquier etapa (incluidas las perdidas). Cambia el Estado directo desde aquí — te va a pedir qué pasó y el siguiente paso, igual que en el Tablero, para que quede en la bitácora. Ordena por Estado o por Último contacto haciendo clic en el encabezado.</p>
+  <div class="barra" id="w-leadsasesor" hidden><div><div class="filtro-t">Ver por asesor</div><div class="chips" id="f-leadsasesor"></div></div></div>
+  <div id="leads-cont"></div>
 </div>
 
 <div class="panel" id="p-captura" hidden>
@@ -604,6 +641,7 @@ let ME = null;               // {id,nombre,email,color,rol,puede_reasignar_caduc
 let ETAPAS = [], MOTIVOS = [], FORMAS_PAGO = [], ORIGENES = [], LOTES = [], EQUIPO = [];
 let NEGS = [];
 let fCancha = "todas", verQuien = "todas", fSeguim = "todas", fHoyAsesor = "todos";
+let fLeadsAsesor = "todos", leadsSort = { campo: "estado", dir: 1 }, pendFlotAbierto = false;
 let fCanal = "todos", fRefPor = "todos", fPer = "todo", fD1 = "", fD2 = "";
 let abierto = {}; // columnas del Tablero con "ver las otras N" activado
 
@@ -850,6 +888,7 @@ function suscribirRealtime(){
       if(!document.getElementById("p-hoy").hidden) pintaHoy();
       if(!document.getElementById("p-bandeja").hidden) pintaBandeja();
       if(!document.getElementById("p-desglose").hidden) pintaDesglose();
+      if(!document.getElementById("p-leads").hidden) pintaLeads();
     })
     .on("postgres_changes", {event:"*", schema:"public", table:"equipo"}, async function(){ await cargarCatalogos(); render(); })
     .subscribe();
@@ -863,6 +902,7 @@ document.querySelector(".tabs").addEventListener("click", function(e){
   if (t.dataset.p === "p-perdidas") perdidas();
   if (t.dataset.p === "p-hoy") pintaHoy();
   if (t.dataset.p === "p-bandeja") pintaBandeja();
+  if (t.dataset.p === "p-leads") pintaLeads();
   if (t.dataset.p === "p-desglose") pintaDesglose();
   if (t.dataset.p === "p-tiempos") pintaTiempos();
   if (t.dataset.p === "p-ajustes") pintarAjustes();
@@ -972,6 +1012,7 @@ function render(){
       '</div>';
   }).join("");
   pintaEmbudo();
+  pintaPendFlot();
 }
 
 document.getElementById("board").addEventListener("click", function(e){
@@ -1231,6 +1272,13 @@ async function abrir(id, modo){
       actualizado_en: new Date().toISOString(),
     };
     if (document.getElementById("mv-resp").checked) patch.fecha_ultima_respuesta = hoy();
+    // reactivar: si venía marcada perdida y aquí se elige una etapa viva, se revive por completo
+    // (antes de "Mis leads" no había manera de llegar a este modal desde una negociación perdida,
+    // así que este caso era imposible; ahora sí, y hay que limpiarle el rastro de perdida entero).
+    if (n.perdida) {
+      patch.perdida = false; patch.motivo_perdida = null; patch.objecion = null;
+      patch.competidor = null; patch.recontactar = null; patch.etapa_muerte = null;
+    }
     await sb.from("negociaciones").update(patch).eq("id", n.id);
     await sb.from("bitacora").insert({ negociacion_id: n.id, texto, etapa: et, cancha });
     if (modo !== null) cerrar(); else abrir(id, null);
@@ -1324,7 +1372,8 @@ async function registrarActo(id, actoId){
   if (a.etapa !== undefined && n.etapa < a.etapa) { etapaLog = a.etapa; patch.etapa = a.etapa; }
   await sb.from("negociaciones").update(patch).eq("id", id);
   await sb.from("bitacora").insert({ negociacion_id: id, texto: a.t + " · " + a.d, etapa: etapaLog, cancha: n.cancha });
-  await cargarNegociaciones(); pintaHoy();
+  await cargarNegociaciones(); pintaHoy(); pintaPendFlot();
+  if (!document.getElementById("p-leads").hidden) pintaLeads();
 }
 function botonesActo(id){
   return ACTOS.map(a => '<button class="btn sec" data-negid="' + id + '" data-acto="' + a.id + '" title="' + a.d + '">' + a.t + '</button>').join("");
@@ -1338,19 +1387,14 @@ function filaHoy(n, badge, cls){
     '<div class="hoy-acc">' + botonesActo(n.id) + '</div></div>';
 }
 
-function pintaHoy(){
-  const wrap = document.getElementById("w-hoyasesor");
-  wrap.hidden = !esAdmin();
-  if (esAdmin() && !document.getElementById("f-hoyasesor").childElementCount) {
-    document.getElementById("f-hoyasesor").innerHTML =
-      '<button class="chip" aria-pressed="true" data-v="todos">Todos</button>' +
-      EQUIPO.filter(a=>a.activo && a.rol!=="admin").map(a => '<button class="chip" aria-pressed="false" data-v="' + a.id + '">' + a.nombre + '</button>').join("");
-    grupo("f-hoyasesor", v => { fHoyAsesor = v; pintaHoy(); });
-  }
+// base compartida por la pestaña Hoy y el panel flotante de pendientes: mismos filtros, mismo asesor
+function todasHoyVisibles(){
   let todas = NEGS.filter(n => !n.perdida && (esAdmin() || n.asesor_id === ME.id));
   if (esAdmin() && fHoyAsesor !== "todos") todas = todas.filter(n => n.asesor_id === fHoyAsesor);
-
-  const grupos = [
+  return todas;
+}
+function gruposHoyDe(todas){
+  return [
     ["Compromisos vencidos", "Se puso una fecha y ya pasó. Esto va primero, siempre.",
       todas.filter(n => n.fecha_compromiso && n.fecha_compromiso < hoy()), "Vencido", "p-ven"],
     ["Comprometidos para hoy", "Se prometió dar este paso hoy.",
@@ -1362,6 +1406,18 @@ function pintaHoy(){
     ["Contactados sin calificar", "Ya contestaron. Falta presupuesto, plazo, forma de pago y lote de interés para calificar.",
       todas.filter(n => n.etapa === 1), "Por calificar", "p-act"],
   ];
+}
+function pintaHoy(){
+  const wrap = document.getElementById("w-hoyasesor");
+  wrap.hidden = !esAdmin();
+  if (esAdmin() && !document.getElementById("f-hoyasesor").childElementCount) {
+    document.getElementById("f-hoyasesor").innerHTML =
+      '<button class="chip" aria-pressed="true" data-v="todos">Todos</button>' +
+      EQUIPO.filter(a=>a.activo && a.rol!=="admin").map(a => '<button class="chip" aria-pressed="false" data-v="' + a.id + '">' + a.nombre + '</button>').join("");
+    grupo("f-hoyasesor", v => { fHoyAsesor = v; pintaHoy(); });
+  }
+  const todas = todasHoyVisibles();
+  const grupos = gruposHoyDe(todas);
   let h = "", total = 0;
   grupos.forEach(function(g){
     if (!g[2].length) return;
@@ -1380,32 +1436,65 @@ document.getElementById("hoy-lista").addEventListener("click", function(e){
   registrarActo(b.dataset.negid, b.dataset.acto);
 });
 
+// ---------- panel flotante de pendientes: mismo cómputo de Hoy, visible en cualquier pantalla ----------
+function pintaPendFlot(){
+  const todas = todasHoyVisibles();
+  const grupos = gruposHoyDe(todas).filter(g => g[2].length);
+  const total = grupos.reduce((a,g) => a + g[2].length, 0);
+  const btn = document.getElementById("pend-flot-toggle");
+  document.getElementById("pend-flot-badge").textContent = total;
+  btn.classList.toggle("cero", total === 0);
+  document.getElementById("pend-flot-lista").innerHTML = total
+    ? grupos.map(g => '<div class="pend-grupo"><h4>' + g[0] + ' <span class="mini">· ' + g[2].length + '</span></h4>' +
+        g[2].slice(0, 4).map(n => filaHoy(n, g[3], g[4])).join("") +
+        (g[2].length > 4 ? '<p class="txt mini" style="font-style:italic">+' + (g[2].length - 4) + ' más — ábrelo en Hoy.</p>' : '') +
+        '</div>').join("")
+    : '<p class="txt mini" style="font-style:italic;color:var(--tinta-3)">Nada pendiente por hoy — todo al día.</p>';
+}
+document.getElementById("pend-flot-toggle").addEventListener("click", function(){
+  pendFlotAbierto = !pendFlotAbierto;
+  document.getElementById("pend-flot-panel").hidden = !pendFlotAbierto;
+});
+document.getElementById("pend-flot-vertodo").addEventListener("click", function(){
+  document.querySelector('[data-p="p-hoy"]').click();
+  pendFlotAbierto = false;
+  document.getElementById("pend-flot-panel").hidden = true;
+});
+document.getElementById("pend-flot-panel").addEventListener("click", function(e){
+  const b = e.target.closest("[data-acto]"); if (!b) return;
+  registrarActo(b.dataset.negid, b.dataset.acto);
+});
+
 // ---------- Bandeja: Registro y Contactado, con intentos y caducidad ----------
 async function bandejaIntento(id){
   const n = NEGS.find(x=>x.id===id); if (!n) return;
   await sb.from("negociaciones").update({ intentos: (n.intentos||0)+1 }).eq("id", id);
   await sb.from("bitacora").insert({ negociacion_id: id, texto: "Intento de contacto sin respuesta", etapa: n.etapa, cancha: n.cancha });
-  await cargarNegociaciones(); pintaBandeja();
+  await cargarNegociaciones(); pintaBandeja(); pintaPendFlot();
+  if (!document.getElementById("p-leads").hidden) pintaLeads();
 }
 async function bandejaContacto(id){
   const n = NEGS.find(x=>x.id===id); if (!n) return;
   await sb.from("negociaciones").update({ etapa: 1, fecha_ultimo_contacto: hoy(), actualizado_en: new Date().toISOString() }).eq("id", id);
   await sb.from("bitacora").insert({ negociacion_id: id, texto: "Contactado — conversación de dos vías", etapa: 1, cancha: n.cancha });
-  await cargarNegociaciones(); pintaBandeja();
+  await cargarNegociaciones(); pintaBandeja(); pintaPendFlot();
+  if (!document.getElementById("p-leads").hidden) pintaLeads();
 }
 async function bandejaQuitarDueno(id){
   const n = NEGS.find(x=>x.id===id); if (!n) return;
   if (!confirm("¿Quitarle el dueño a " + n.cliente + "? Pasa a la bolsa de sin dueño.")) return;
   await sb.from("negociaciones").update({ asesor_id: null, asesor_previo: n.asesor_id }).eq("id", id);
   await sb.from("bitacora").insert({ negociacion_id: id, texto: "Caducó — pierde dueño", etapa: n.etapa, cancha: n.cancha });
-  await cargarNegociaciones(); pintaBandeja();
+  await cargarNegociaciones(); pintaBandeja(); pintaPendFlot();
+  if (!document.getElementById("p-leads").hidden) pintaLeads();
 }
 async function bandejaAsignar(id, nuevoId){
   if (!nuevoId) return;
   const n = NEGS.find(x=>x.id===id); if (!n) return;
   await sb.from("negociaciones").update({ asesor_id: nuevoId, fecha_asignacion: hoy(), intentos: 0 }).eq("id", id);
   await sb.from("bitacora").insert({ negociacion_id: id, texto: "Reasignado a " + (eqById(nuevoId)||{}).nombre + " desde la bolsa de sin dueño", etapa: n.etapa, cancha: n.cancha });
-  await cargarNegociaciones(); pintaBandeja();
+  await cargarNegociaciones(); pintaBandeja(); pintaPendFlot();
+  if (!document.getElementById("p-leads").hidden) pintaLeads();
 }
 
 function filaBandeja(n, conAcciones, extra){
@@ -1478,6 +1567,78 @@ document.getElementById("p-bandeja").addEventListener("click", function(e){
     const sel = document.querySelector('[data-sel="' + a.dataset.asig + '"]');
     return bandejaAsignar(a.dataset.asig, sel ? sel.value : "");
   }
+});
+
+// ---------- Mis leads: el 100% de las negociaciones del asesor, estado editable, ordenable ----------
+// mismo criterio de "reloj" que seguim() (días sin contacto nuestro / sin respuesta suya según cancha),
+// pero como número para poder ordenar — nunca contactado se va al final (es el caso más viejo).
+function relojDias(n){
+  const base = (n.cancha === "cliente" && n.fecha_ultima_respuesta) ? n.fecha_ultima_respuesta : n.fecha_ultimo_contacto;
+  return base ? dias(base) : Infinity;
+}
+// orden de estado: vivas por etapa (0..6), perdidas siempre al final agrupadas por en qué etapa murieron
+function estadoOrden(n){ return n.perdida ? 100 + (n.etapa_muerte ?? n.etapa) : n.etapa; }
+const LEADS_COLS = [
+  { k: "estado", t: "Estado" },
+  { k: "reloj", t: "Último contacto" },
+];
+function filaLeads(n){
+  const eq = eqById(n.asesor_id);
+  const rd = relojDias(n);
+  const seg = n.perdida ? null : seguim(n);
+  const selVal = n.perdida ? ETAPA_PERDIDO : n.etapa;
+  return '<tr>' +
+    '<td><b>' + n.cliente + '</b>' + (n.telefono ? '<div class="mini">' + n.telefono + '</div>' : '') + refHint(n) + '</td>' +
+    '<td><select data-etapasel="' + n.id + '">' + optEtapas(selVal) + '</select></td>' +
+    '<td class="mini">' + LBL[n.cancha] + '</td>' +
+    '<td>' + (rd === Infinity ? '<span class="mini">nunca</span>' : '<b>' + rd + '</b> d') +
+      (seg ? ' <span class="seg ' + VIG[seg] + '">' + seg + '</span>' : '') + '</td>' +
+    '<td class="mini">' + (n.siguiente_paso || "—") + '</td>' +
+    '<td class="mini">' + (n.fecha_compromiso || "—") + '</td>' +
+    (esAdmin() ? '<td class="mini">' + (eq ? eq.nombre : "Sin dueño") + '</td>' : '') +
+    '</tr>';
+}
+function pintaLeads(){
+  const wrap = document.getElementById("w-leadsasesor");
+  wrap.hidden = !esAdmin();
+  if (esAdmin() && !document.getElementById("f-leadsasesor").childElementCount) {
+    document.getElementById("f-leadsasesor").innerHTML =
+      '<button class="chip" aria-pressed="true" data-v="todos">Todos</button>' +
+      EQUIPO.filter(a=>a.activo && a.rol!=="admin").map(a => '<button class="chip" aria-pressed="false" data-v="' + a.id + '">' + a.nombre + '</button>').join("");
+    grupo("f-leadsasesor", v => { fLeadsAsesor = v; pintaLeads(); });
+  }
+  let todas = NEGS.filter(n => esAdmin() || n.asesor_id === ME.id);
+  if (esAdmin() && fLeadsAsesor !== "todos") todas = todas.filter(n => n.asesor_id === fLeadsAsesor);
+
+  const dir = leadsSort.dir;
+  todas = todas.slice().sort(function(a, b){
+    const va = leadsSort.campo === "estado" ? estadoOrden(a) : relojDias(a);
+    const vb = leadsSort.campo === "estado" ? estadoOrden(b) : relojDias(b);
+    return va < vb ? -dir : va > vb ? dir : 0;
+  });
+
+  const flecha = k => leadsSort.campo === k ? (leadsSort.dir === 1 ? " ▲" : " ▼") : "";
+  const thOrd = k => LEADS_COLS.find(c => c.k === k);
+  const thTag = k => { const c = thOrd(k); return '<th class="ord" data-sort="' + c.k + '">' + c.t + flecha(c.k) + '</th>'; };
+  document.getElementById("leads-cont").innerHTML = todas.length
+    ? '<div style="overflow-x:auto"><table class="leads-tabla"><tr><th>Cliente</th>' +
+      thTag("estado") + '<th>Cancha</th>' + thTag("reloj") +
+      '<th>Siguiente paso</th><th>Comprometido para</th>' + (esAdmin() ? '<th>Dueño</th>' : '') + '</tr>' +
+      todas.map(filaLeads).join("") + '</table></div>'
+    : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">No tienes negociaciones todavía.</p>';
+}
+document.getElementById("leads-cont").addEventListener("click", function(e){
+  const th = e.target.closest("[data-sort]"); if (!th) return;
+  const campo = th.dataset.sort;
+  leadsSort.dir = (leadsSort.campo === campo) ? -leadsSort.dir : 1;
+  leadsSort.campo = campo;
+  pintaLeads();
+});
+document.getElementById("leads-cont").addEventListener("change", function(e){
+  const sel = e.target.closest("[data-etapasel]"); if (!sel) return;
+  const id = sel.dataset.etapasel, val = +sel.value;
+  abrir(id, val === ETAPA_PERDIDO ? "perdida" : val);
+  pintaLeads(); // repinta ya (sin guardar nada todavía) para que el select regrese a su valor real mientras el modal decide
 });
 
 // ---------- Desglose: motor de análisis libre (agrupar/cruzar/filtrar/graficar/guardar) ----------
