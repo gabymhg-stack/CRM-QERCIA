@@ -149,6 +149,8 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .hoy-row .mini{font-size:11px;color:var(--tinta-3)}
 .hoy-acc{display:flex;gap:5px;flex-wrap:wrap;flex:0 1 auto}
 .hoy-acc .btn{padding:4px 8px;font-size:11.5px}
+.hoy-row.clickable{cursor:pointer}
+.hoy-row.clickable:hover .hoy-info b{text-decoration:underline}
 /* ---------- panel flotante de pendientes ---------- */
 .pend-flot{position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;align-items:flex-end}
 .pend-flot-btn{font-family:inherit;font-size:12.5px;padding:9px 16px;border:1px solid var(--tinta);background:var(--tinta);color:var(--papel);cursor:pointer;border-radius:20px;box-shadow:0 2px 10px rgba(28,26,23,.18)}
@@ -1378,9 +1380,11 @@ async function registrarActo(id, actoId){
 function botonesActo(id){
   return ACTOS.map(a => '<button class="btn sec" data-negid="' + id + '" data-acto="' + a.id + '" title="' + a.d + '">' + a.t + '</button>').join("");
 }
+// data-negid en el propio renglón (no solo en los botones de un toque) para que se pueda abrir
+// el pop-up completo del cliente con solo darle clic a la línea — igual que una tarjeta del Tablero.
 function filaHoy(n, badge, cls){
   const eq = eqById(n.asesor_id);
-  return '<div class="hoy-row">' +
+  return '<div class="hoy-row clickable" data-negid="' + n.id + '" title="Ver todos los datos de este cliente">' +
     '<div class="hoy-info"><b>' + n.cliente + '</b> <span class="seg ' + cls + '">' + badge + '</span>' +
     '<div class="mini">' + (ETAPAS.find(e=>e.id===n.etapa)||{}).nombre + (esAdmin()?' · '+(eq?eq.nombre:"Sin dueño"):'') +
     ' · ' + (n.siguiente_paso || "sin siguiente paso") + refHint(n) + '</div></div>' +
@@ -1432,8 +1436,8 @@ function pintaHoy(){
     : '<p class="txt" style="font-style:italic;color:var(--tinta-3)">Nada pendiente por hoy — todo al día.</p>';
 }
 document.getElementById("hoy-lista").addEventListener("click", function(e){
-  const b = e.target.closest("[data-acto]"); if (!b) return;
-  registrarActo(b.dataset.negid, b.dataset.acto);
+  const b = e.target.closest("[data-acto]"); if (b) { registrarActo(b.dataset.negid, b.dataset.acto); return; }
+  const row = e.target.closest("[data-negid]"); if (row) abrir(row.dataset.negid, null);
 });
 
 // ---------- panel flotante de pendientes: mismo cómputo de Hoy, visible en cualquier pantalla ----------
@@ -1461,8 +1465,12 @@ document.getElementById("pend-flot-vertodo").addEventListener("click", function(
   document.getElementById("pend-flot-panel").hidden = true;
 });
 document.getElementById("pend-flot-panel").addEventListener("click", function(e){
-  const b = e.target.closest("[data-acto]"); if (!b) return;
-  registrarActo(b.dataset.negid, b.dataset.acto);
+  const b = e.target.closest("[data-acto]"); if (b) { registrarActo(b.dataset.negid, b.dataset.acto); return; }
+  const row = e.target.closest("[data-negid]");
+  if (row) {
+    abrir(row.dataset.negid, null);
+    pendFlotAbierto = false; document.getElementById("pend-flot-panel").hidden = true;
+  }
 });
 
 // ---------- Bandeja: Registro y Contactado, con intentos y caducidad ----------
