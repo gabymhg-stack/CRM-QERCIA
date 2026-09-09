@@ -235,6 +235,8 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 .mcontacto{font-size:13.5px;margin-top:6px}
 .mcontacto a{color:var(--verde);font-weight:500;text-decoration:underline}
 .mcontacto .sintel{color:var(--tinta-3);font-style:italic}
+.btn.cotizar{border-color:var(--verde);color:var(--verde);padding:6px 14px;font-size:13px}
+.btn.cotizar:hover{background:var(--verde-bg)}
 .cerrar{background:none;border:none;font-size:22px;line-height:1;color:var(--tinta-3);cursor:pointer;font-family:inherit}
 .bit{border-left:2px solid var(--linea-fuerte);padding-left:13px;margin-top:6px}
 .bit .e{padding:8px 0;border-bottom:1px dotted var(--linea);font-size:13px}
@@ -544,7 +546,8 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 <div class="ovl" id="ovl" hidden>
   <div class="modal">
     <div class="mhead">
-      <div><div class="n" id="m-nombre"></div><div class="s" id="m-sub"></div><div class="mcontacto" id="m-contacto"></div></div>
+      <div><div class="n" id="m-nombre"></div><div class="s" id="m-sub"></div><div class="mcontacto" id="m-contacto"></div>
+        <button class="btn sec cotizar" id="m-cotizar" style="margin-top:8px">Cotizar en Qercia ↗</button></div>
       <button class="cerrar" id="m-cerrar" aria-label="Cerrar">&times;</button>
     </div>
     <div id="m-cuerpo"></div>
@@ -559,6 +562,30 @@ const ADMIN_ETAPA = 7;
 const ETAPA_PERDIDO = 50; // valor centinela: nunca se guarda así, es solo la opción "Perdido" del selector — al elegirla se abre el flujo normal de "Marcar perdida" (motivo, objeción, etc.)
 const LBL = {nuestra:"Cancha nuestra", cliente:"Cancha del cliente", tercero:"Cancha de tercero"};
 const COLORES_DEFAULT = ["#F26B0A","#1B3FE0","#A01236","#26D2F5","#3ECC1E","#B07CF0","#8A5A0B","#3B6D11"];
+// ---------- cotizador (plataforma aparte, qercia-cotizador.vercel.app): botón "Cotizar en Qercia" ----------
+const COTIZADOR_URL = "https://qercia-cotizador.vercel.app/mapa.html";
+// nuestra clave de lote interna no coincide con la del cotizador: aquí se guarda "R3 L-001" o
+// "Sub 12 L-004"; el cotizador espera "R3-L001" o "S12-L004" (manzana-Lxxx, la S sin guion antes
+// del número). "MacroLote" y cualquier formato que no matchee no tiene equivalente ahí — se manda
+// sin parámetro de lote y el cotizador abre el mapa completo (así está documentado que se comporta).
+function loteClaveCotizador(clave){
+  if (!clave) return null;
+  let m = clave.match(/^R(\d{1,2}) L-(\d{3})$/);
+  if (m) return "R" + m[1] + "-L" + m[2];
+  m = clave.match(/^Sub (\d{1,2}) L-(\d{3})$/);
+  if (m) return "S" + m[1] + "-L" + m[2];
+  return null;
+}
+function abrirCotizador(n){
+  // encodeURIComponent a mano (no URLSearchParams) para que los espacios viajen como %20, tal
+  // como pide la especificación del cotizador, y no como "+" (application/x-www-form-urlencoded).
+  const partes = [];
+  const loteCot = loteClaveCotizador(n.lote_clave);
+  if (loteCot) partes.push("lote=" + encodeURIComponent(loteCot));
+  if (n.cliente) partes.push("cliente=" + encodeURIComponent(n.cliente));
+  partes.push("crm=" + encodeURIComponent(n.id));
+  window.open(COTIZADOR_URL + "?" + partes.join("&"), "_blank", "noopener");
+}
 
 // ---------- modelo de embudo: probabilidad por etapa y categoría de pronóstico ----------
 const PROB = {0:0, 1:0, 2:10, 3:25, 4:40, 5:60, 6:80, 7:90, 8:100};
@@ -1187,6 +1214,10 @@ const ovl = document.getElementById("ovl");
 function cerrar(){ ovl.hidden = true; }
 document.getElementById("m-cerrar").addEventListener("click", cerrar);
 ovl.addEventListener("click", function(e){ if (e.target === ovl) cerrar(); });
+let ABIERTO_ID = null; // id de la negociación que el pop-up tiene abierta ahora mismo
+document.getElementById("m-cotizar").addEventListener("click", function(){
+  const n = NEGS.find(x => x.id === ABIERTO_ID); if (n) abrirCotizador(n);
+});
 
 function optEtapas(val){
   return ETAPAS.filter(e=>e.id<ADMIN_ETAPA).map(e => '<option value="'+e.id+'"'+(e.id==val?' selected':'')+'>'+(e.id+1)+' · '+e.nombre+'</option>').join("")
@@ -1196,6 +1227,7 @@ function optCanchas(val){ return ["nuestra","cliente","tercero"].map(c => '<opti
 
 async function abrir(id, modo){
   const n = NEGS.find(x => x.id === id); if (!n) return;
+  ABIERTO_ID = id;
   const eq = eqById(n.asesor_id);
   document.getElementById("m-nombre").textContent = n.cliente;
   document.getElementById("m-sub").textContent = (n.lote_clave || "sin lote") + " · " + (eq?eq.nombre:"—");
