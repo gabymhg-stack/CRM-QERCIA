@@ -170,6 +170,8 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .leads-tabla th.ord{cursor:pointer;user-select:none}
 .leads-tabla th.ord:hover{color:var(--tinta)}
 .leads-tabla select{font-family:inherit;font-size:12.5px;padding:5px 6px;border:1px solid var(--linea-fuerte);border-radius:2px;background:var(--papel-2);color:var(--tinta)}
+#leads-buscar{font-family:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--linea-fuerte);background:var(--papel-2);color:var(--tinta);border-radius:2px;width:100%}
+#leads-buscar:focus{outline:none;border-color:var(--tinta)}
 /* ---------- Desglose / Tiempos ---------- */
 .anform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 16px;max-width:1100px}
 .anform label{font-size:12px;color:var(--tinta-3);margin-bottom:5px;display:block}
@@ -230,6 +232,9 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 .mhead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:1px solid var(--linea-fuerte);padding-bottom:12px;margin-bottom:16px}
 .mhead .n{font-size:18px;font-weight:500;line-height:1.25}
 .mhead .s{font-size:13px;color:var(--tinta-2);margin-top:3px}
+.mcontacto{font-size:13.5px;margin-top:6px}
+.mcontacto a{color:var(--verde);font-weight:500;text-decoration:underline}
+.mcontacto .sintel{color:var(--tinta-3);font-style:italic}
 .cerrar{background:none;border:none;font-size:22px;line-height:1;color:var(--tinta-3);cursor:pointer;font-family:inherit}
 .bit{border-left:2px solid var(--linea-fuerte);padding-left:13px;margin-top:6px}
 .bit .e{padding:8px 0;border-bottom:1px dotted var(--linea);font-size:13px}
@@ -384,7 +389,10 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 
 <div class="panel" id="p-leads" hidden>
   <p class="txt">El 100% de tus negociaciones, en cualquier etapa (incluidas las perdidas). Cambia el Estado directo desde aquí — te va a pedir qué pasó y el siguiente paso, igual que en el Tablero, para que quede en la bitácora. Ordena por Estado o por Último contacto haciendo clic en el encabezado.</p>
-  <div class="barra" id="w-leadsasesor" hidden><div><div class="filtro-t">Ver por asesor</div><div class="chips" id="f-leadsasesor"></div></div></div>
+  <div class="barra">
+    <div><div class="filtro-t">Buscar</div><input type="text" id="leads-buscar" placeholder="Nombre, teléfono o correo…" style="max-width:280px"></div>
+    <div id="w-leadsasesor" hidden><div class="filtro-t">Ver por asesor</div><div class="chips" id="f-leadsasesor"></div></div>
+  </div>
   <div id="leads-cont"></div>
 </div>
 
@@ -536,7 +544,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 <div class="ovl" id="ovl" hidden>
   <div class="modal">
     <div class="mhead">
-      <div><div class="n" id="m-nombre"></div><div class="s" id="m-sub"></div></div>
+      <div><div class="n" id="m-nombre"></div><div class="s" id="m-sub"></div><div class="mcontacto" id="m-contacto"></div></div>
       <button class="cerrar" id="m-cerrar" aria-label="Cerrar">&times;</button>
     </div>
     <div id="m-cuerpo"></div>
@@ -1191,6 +1199,11 @@ async function abrir(id, modo){
   const eq = eqById(n.asesor_id);
   document.getElementById("m-nombre").textContent = n.cliente;
   document.getElementById("m-sub").textContent = (n.lote_clave || "sin lote") + " · " + (eq?eq.nombre:"—");
+  // teléfono y correo, clickeables (tel:/mailto:) — para que el asesor pueda contactar al cliente
+  // directo desde aquí, sin tener que ir a buscarlo a otro lado.
+  document.getElementById("m-contacto").innerHTML =
+    (n.telefono ? '<a href="tel:' + n.telefono.replace(/\s+/g,"") + '">' + n.telefono + '</a>' : '<span class="sintel">sin teléfono</span>') +
+    ' · ' + (n.correo ? '<a href="mailto:' + n.correo + '">' + n.correo + '</a>' : '<span class="sintel">sin correo</span>');
   const cuerpo = document.getElementById("m-cuerpo");
 
   if (modo === "perdida") {
@@ -1618,6 +1631,13 @@ function pintaLeads(){
   let todas = NEGS.filter(n => esAdmin() || n.asesor_id === ME.id);
   if (esAdmin() && fLeadsAsesor !== "todos") todas = todas.filter(n => n.asesor_id === fLeadsAsesor);
 
+  const q = document.getElementById("leads-buscar").value.trim().toLowerCase();
+  if (q) todas = todas.filter(n =>
+    (n.cliente && n.cliente.toLowerCase().includes(q)) ||
+    (n.telefono && n.telefono.toLowerCase().includes(q)) ||
+    (n.correo && n.correo.toLowerCase().includes(q))
+  );
+
   const dir = leadsSort.dir;
   todas = todas.slice().sort(function(a, b){
     const va = leadsSort.campo === "estado" ? estadoOrden(a) : relojDias(a);
@@ -1648,6 +1668,7 @@ document.getElementById("leads-cont").addEventListener("change", function(e){
   abrir(id, val === ETAPA_PERDIDO ? "perdida" : val);
   pintaLeads(); // repinta ya (sin guardar nada todavía) para que el select regrese a su valor real mientras el modal decide
 });
+document.getElementById("leads-buscar").addEventListener("input", pintaLeads);
 
 // ---------- Desglose: motor de análisis libre (agrupar/cruzar/filtrar/graficar/guardar) ----------
 function datosBase(){
