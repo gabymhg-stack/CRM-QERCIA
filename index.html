@@ -252,9 +252,11 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 .barras .et{width:210px;flex:none}
 .barras .bar{height:13px;background:var(--nuestra);border-radius:2px;min-width:2px}
 .barras .c{font-size:12.5px;color:var(--tinta-3)}
-.perd{border:1px solid var(--linea);border-left:3px solid var(--nuestra);background:var(--papel-2);padding:10px 12px;margin-bottom:8px}
+.perd{position:relative;border:1px solid var(--linea);border-left:3px solid var(--nuestra);background:var(--papel-2);padding:10px 40px 10px 12px;margin-bottom:8px}
 .perd .t{font-size:13.5px;font-weight:500}
 .perd .m{font-size:12px;color:var(--tinta-2);margin-top:3px}
+.perd .lapiz{position:absolute;top:8px;right:8px;border:none;background:transparent;cursor:pointer;font-size:14px;padding:4px 6px;border-radius:3px;line-height:1}
+.perd .lapiz:hover{background:var(--linea)}
 .catlist{max-width:520px}
 .catrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--linea);font-size:14px}
 .catrow input[type=text]{flex:1;border:1px solid transparent;background:transparent;font-family:inherit;font-size:14px;padding:3px 5px;border-radius:2px}
@@ -390,7 +392,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 </div>
 
 <div class="panel" id="p-leads" hidden>
-  <p class="txt">El 100% de tus negociaciones, en cualquier etapa (incluidas las perdidas). Cambia el Estado directo desde aquí — te va a pedir qué pasó y el siguiente paso, igual que en el Tablero, para que quede en la bitácora. Ordena por Estado o por Último contacto haciendo clic en el encabezado.</p>
+  <p class="txt">El 100% de tus negociaciones activas, en cualquier etapa. Las perdidas ya no aparecen aquí — se van al almacén de Perdidas. Cambia el Estado directo desde aquí — te va a pedir qué pasó y el siguiente paso, igual que en el Tablero, para que quede en la bitácora. Ordena por Estado o por Último contacto haciendo clic en el encabezado.</p>
   <div class="barra">
     <div><div class="filtro-t">Buscar</div><input type="text" id="leads-buscar" placeholder="Nombre, teléfono o correo…" style="max-width:280px"></div>
     <div id="w-leadsasesor" hidden><div class="filtro-t">Ver por asesor</div><div class="chips" id="f-leadsasesor"></div></div>
@@ -473,7 +475,7 @@ ol.reglas li{margin-bottom:9px;font-size:14px;padding-left:4px}
 </div>
 
 <div class="panel" id="p-perdidas" hidden>
-  <p class="txt">Cada perdida conserva la etapa donde murió y el motivo.</p>
+  <p class="txt">Cada perdida conserva la etapa donde murió y el motivo. Aquí ya no se pueden mover etapas — solo admin puede editar el motivo/objeción o reactivarla (lápiz en cada tarjeta).</p>
   <h3>Por asesor · últimos 60 días</h3><div class="barras" id="g-asesor60"></div>
   <h3>Por motivo</h3><div class="barras" id="g-motivo"></div>
   <h3>Por etapa donde murió</h3><div class="barras" id="g-etapa"></div>
@@ -917,16 +919,22 @@ async function cargarNegociaciones(){
   NEGS = data || [];
 }
 
+// refresca datos + repinta cualquier panel visible -- usarla después de CUALQUIER
+// escritura a negociaciones (altas, movimientos, perdida, edición, reactivación),
+// no solo desde el listener de realtime, para que la pantalla nunca se quede
+// mostrando datos viejos después de una acción del propio usuario.
+async function refrescarTodo(){
+  await cargarNegociaciones(); render();
+  if(!document.getElementById("p-perdidas").hidden) perdidas();
+  if(!document.getElementById("p-hoy").hidden) pintaHoy();
+  if(!document.getElementById("p-bandeja").hidden) pintaBandeja();
+  if(!document.getElementById("p-desglose").hidden) pintaDesglose();
+  if(!document.getElementById("p-leads").hidden) pintaLeads();
+}
+
 function suscribirRealtime(){
   sb.channel("negs-live")
-    .on("postgres_changes", {event:"*", schema:"public", table:"negociaciones"}, async function(){
-      await cargarNegociaciones(); render();
-      if(!document.getElementById("p-perdidas").hidden) perdidas();
-      if(!document.getElementById("p-hoy").hidden) pintaHoy();
-      if(!document.getElementById("p-bandeja").hidden) pintaBandeja();
-      if(!document.getElementById("p-desglose").hidden) pintaDesglose();
-      if(!document.getElementById("p-leads").hidden) pintaLeads();
-    })
+    .on("postgres_changes", {event:"*", schema:"public", table:"negociaciones"}, refrescarTodo)
     .on("postgres_changes", {event:"*", schema:"public", table:"equipo"}, async function(){ await cargarCatalogos(); render(); })
     .subscribe();
 }
@@ -1239,33 +1247,60 @@ async function abrir(id, modo){
   const cuerpo = document.getElementById("m-cuerpo");
 
   if (modo === "perdida") {
+    // este mismo formulario sirve para dos cosas: marcar una negociación viva como perdida
+    // (n.perdida todavía false), o editar los datos de una que ya está perdida (el lápiz del
+    // almacén de Perdidas) — en ese segundo caso se precargan motivo/objeción/competidor/fecha
+    // y aparece además un botón para reactivarla.
+    const yaPerdida = n.perdida;
+    const etapaMuerteNom = (ETAPAS.find(e=>e.id===(n.etapa_muerte ?? n.etapa))||{}).nombre;
     cuerpo.innerHTML =
-      '<p class="txt">Muere en <b style="font-weight:500">' + ETAPAS.find(e=>e.id===n.etapa).nombre + '</b>.</p>' +
+      (yaPerdida
+        ? '<p class="txt">Perdida — murió en <b style="font-weight:500">' + etapaMuerteNom + '</b>. Edita el motivo o los datos de abajo, o reactívala si se perdió por error.</p>'
+        : '<p class="txt">Muere en <b style="font-weight:500">' + ETAPAS.find(e=>e.id===n.etapa).nombre + '</b>.</p>') +
       '<h3>Motivo principal</h3><div class="motivos">' +
-        MOTIVOS.filter(m=>m.activo).map(m => '<label><input type="radio" name="mot" value="'+m.texto+'">'+m.texto+'</label>').join("") +
+        MOTIVOS.filter(m=>m.activo).map(m => '<label><input type="radio" name="mot" value="'+m.texto+'"'+(yaPerdida && n.motivo_perdida===m.texto?' checked':'')+'>'+m.texto+'</label>').join("") +
       '</div>' +
       '<div class="mform" style="margin-top:14px">' +
-        '<div class="full"><label>¿Qué objetó exactamente?</label><textarea id="p-obj"></textarea></div>' +
-        '<div><label>¿Contra quién lo perdimos?</label><input id="p-comp"></div>' +
-        '<div><label>Recontactar el</label><input type="date" id="p-fecha"></div>' +
+        '<div class="full"><label>¿Qué objetó exactamente?</label><textarea id="p-obj">' + (yaPerdida ? (n.objecion||"") : "") + '</textarea></div>' +
+        '<div><label>¿Contra quién lo perdimos?</label><input id="p-comp" value="' + (yaPerdida ? (n.competidor||"") : "") + '"></div>' +
+        '<div><label>Recontactar el</label><input type="date" id="p-fecha" value="' + (yaPerdida ? (n.recontactar||"") : "") + '"></div>' +
       '</div>' +
-      '<div class="acciones" style="margin-top:16px"><button class="btn" id="p-ok">Marcar perdida</button>' +
+      '<div class="acciones" style="margin-top:16px"><button class="btn" id="p-ok">' + (yaPerdida ? "Guardar cambios" : "Marcar perdida") + '</button>' +
+      (yaPerdida ? '<button class="btn sec" id="p-reactivar">Reactivar — ya no está perdida</button>' : '') +
       '<button class="btn sec" id="p-cancel">Cancelar</button><span class="ok" id="p-msg"></span></div>';
-    document.getElementById("p-cancel").addEventListener("click", () => abrir(id, null));
+    document.getElementById("p-cancel").addEventListener("click", () => yaPerdida ? cerrar() : abrir(id, null));
     document.getElementById("p-ok").addEventListener("click", async function(){
       const r = document.querySelector('input[name="mot"]:checked');
       const obj = document.getElementById("p-obj").value.trim();
       const msg = document.getElementById("p-msg");
       if (!r) { msg.style.color="var(--nuestra)"; msg.textContent="Elige el motivo"; return; }
       if (!obj) { msg.style.color="var(--nuestra)"; msg.textContent="Escribe qué objetó"; return; }
+      const etapaLog = yaPerdida ? (n.etapa_muerte ?? n.etapa) : n.etapa;
       await sb.from("negociaciones").update({
         perdida: true, motivo_perdida: r.value, objecion: obj,
         competidor: document.getElementById("p-comp").value.trim(),
         recontactar: document.getElementById("p-fecha").value || null,
-        etapa_muerte: n.etapa,
+        etapa_muerte: etapaLog,
         actualizado_en: new Date().toISOString(),
       }).eq("id", n.id);
-      await sb.from("bitacora").insert({ negociacion_id: n.id, texto: "Perdida · " + r.value + " · " + obj, etapa: n.etapa, cancha: n.cancha });
+      await sb.from("bitacora").insert({
+        negociacion_id: n.id,
+        texto: (yaPerdida ? "Se editó la pérdida · " : "Perdida · ") + r.value + " · " + obj,
+        etapa: etapaLog, cancha: n.cancha
+      });
+      await refrescarTodo();
+      cerrar();
+    });
+    if (yaPerdida) document.getElementById("p-reactivar").addEventListener("click", async function(){
+      const etapaVuelta = n.etapa_muerte ?? n.etapa;
+      const nombreVuelta = (ETAPAS.find(e=>e.id===etapaVuelta)||{}).nombre;
+      if (!confirm("¿Reactivar a " + n.cliente + "? Vuelve a " + nombreVuelta + " y sale del almacén de perdidas.")) return;
+      await sb.from("negociaciones").update({
+        perdida: false, motivo_perdida: null, objecion: null, competidor: null, recontactar: null, etapa_muerte: null,
+        etapa: etapaVuelta, actualizado_en: new Date().toISOString(),
+      }).eq("id", n.id);
+      await sb.from("bitacora").insert({ negociacion_id: n.id, texto: "Reactivada — vuelve a " + nombreVuelta, etapa: etapaVuelta, cancha: n.cancha });
+      await refrescarTodo();
       cerrar();
     });
     ovl.hidden = false; return;
@@ -1328,6 +1363,7 @@ async function abrir(id, modo){
     }
     await sb.from("negociaciones").update(patch).eq("id", n.id);
     await sb.from("bitacora").insert({ negociacion_id: n.id, texto, etapa: et, cancha });
+    await refrescarTodo();
     if (modo !== null) cerrar(); else abrir(id, null);
   });
   ovl.hidden = false;
@@ -1383,11 +1419,17 @@ async function perdidas(){
   barras("g-motivo", pm); barras("g-etapa", pe);
   cont.innerHTML = todas.map(function(x){
     const eq = eqById(x.asesor_id);
-    return '<div class="perd"><div class="t">' + x.cliente + ' · ' + (x.lote_clave || "sin lote") + '</div>' +
+    return '<div class="perd">' +
+      (esAdmin() ? '<button class="lapiz" data-negid="' + x.id + '" title="Editar esta perdida" aria-label="Editar">✏️</button>' : '') +
+      '<div class="t">' + x.cliente + ' · ' + (x.lote_clave || "sin lote") + '</div>' +
       '<div class="m"><b style="font-weight:500">' + (x.motivo_perdida || "sin motivo") + '</b> · murió en ' + (ETAPAS.find(e=>e.id===(x.etapa_muerte??x.etapa))?.nombre) + ' · ' + (eq?eq.nombre:"—") + '</div>' +
       (x.objecion ? '<div class="m">' + x.objecion + '</div>' : '') + '</div>';
   }).join("");
 }
+document.getElementById("l-perdidas").addEventListener("click", function(e){
+  const b = e.target.closest("[data-negid]");
+  if (b && esAdmin()) abrir(b.dataset.negid, "perdida");
+});
 
 // ---------- Hoy: lo que hay que tocar hoy, agrupado por qué tan urgente es ----------
 // botones de un toque: cada uno deja bitácora y sube la etapa si corresponde, sin abrir el modal.
@@ -1660,7 +1702,7 @@ function pintaLeads(){
       EQUIPO.filter(a=>a.activo && a.rol!=="admin").map(a => '<button class="chip" aria-pressed="false" data-v="' + a.id + '">' + a.nombre + '</button>').join("");
     grupo("f-leadsasesor", v => { fLeadsAsesor = v; pintaLeads(); });
   }
-  let todas = NEGS.filter(n => esAdmin() || n.asesor_id === ME.id);
+  let todas = NEGS.filter(n => !n.perdida && (esAdmin() || n.asesor_id === ME.id));
   if (esAdmin() && fLeadsAsesor !== "todos") todas = todas.filter(n => n.asesor_id === fLeadsAsesor);
 
   const q = document.getElementById("leads-buscar").value.trim().toLowerCase();
