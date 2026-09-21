@@ -118,6 +118,8 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .pipe-f:hover{background:var(--papel-2)}
 .pipe-f.abierta{background:var(--papel-2);border-bottom-color:transparent}
 .pipe-detalle{padding:2px 6px 12px 6px;border-bottom:1px solid var(--linea);background:var(--papel-2)}
+.pipe-det-modo{display:flex;gap:6px;padding:8px 2px 4px}
+.pipe-det-modo .chip{padding:4px 10px;font-size:11.5px}
 .pipe-det-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:7px 8px;border-bottom:1px solid var(--linea);font-size:12.5px;cursor:pointer}
 .pipe-det-row:last-child{border-bottom:none}
 .pipe-det-row:hover .pipe-det-info b{text-decoration:underline}
@@ -694,6 +696,7 @@ let fCancha = "todas", verQuien = "todas", fSeguim = "todas", fHoyAsesor = "todo
 let fLeadsAsesor = "todos", leadsSort = { campo: "estado", dir: 1 }, pendFlotAbierto = false;
 let fCanal = "todos", fRefPor = "todos", fPer = "todo", fD1 = "", fD2 = "";
 let embudoAbierto = null; // id de etapa del embudo con el desglose de registros abierto (null = ninguna)
+let embudoModoTodos = false; // false = solo los que están en la etapa ahora; true = todos los que la alcanzaron alguna vez
 let abierto = {}; // columnas del Tablero con "ver las otras N" activado
 
 // ---------- periodo de entrada: usa creado_en, no fecha_asignacion (esa se resetea al reasignar) ----------
@@ -1129,7 +1132,7 @@ function pintaEmbudo(){
     const vp = valor(EA) * PROB[i] / 100;
     const d = dur(i), fu = perdEt(i);
     const et = ETAPAS.find(e=>e.id===i) || {};
-    filas.push({ i, c, n, cur, EA, bw, cv, vp, d, fu, et });
+    filas.push({ i, c, n, cur, EA, A, bw, cv, vp, d, fu, et });
   }
   let catPrev = "";
   filas.forEach(function(f){
@@ -1154,13 +1157,30 @@ function pintaEmbudo(){
       '<span class="r n">' + (f.d === null ? '·' : f.d) + '</span>' +
       '<span class="r f" style="color:var(--nuestra)">' + (f.fu ? f.fu : '') + '</span></div>';
     if (embudoAbierto === f.i) {
+      // dos modos: "en etapa ahora" (los que siguen exactamente aquí, mismo universo que la
+      // columna "En etapa") y "pasaron por aquí" (todos los que alcanzaron esta etapa en algún
+      // momento, mismo universo que "Alcanzaron" — incluye a los que ya avanzaron o se perdieron
+      // después). El primero es la lista accionable de siempre; el segundo explica por qué
+      // "Alcanzaron" y el desglose no siempre coinciden — nadie se cuenta dos veces, solo se ve
+      // dónde está cada quien ahora.
+      const roster = embudoModoTodos ? f.A : f.EA;
       h += '<div class="pipe-detalle">' +
-        (f.EA.length
-          ? f.EA.map(function(reg){
+        '<div class="pipe-det-modo">' +
+          '<button class="chip" aria-pressed="' + (!embudoModoTodos) + '" data-modo="ahora">En etapa ahora (' + f.cur + ')</button>' +
+          '<button class="chip" aria-pressed="' + (embudoModoTodos) + '" data-modo="todos">Pasaron por aquí (' + f.n + ')</button>' +
+        '</div>' +
+        (roster.length
+          ? roster.map(function(reg){
               const eq = eqById(reg.asesor_id);
+              let estado = "";
+              if (embudoModoTodos) {
+                if (reg.perdida) estado = "Perdida en " + ((ETAPAS.find(e=>e.id===(reg.etapa_muerte??reg.etapa))||{}).nombre || "—");
+                else if (reg.etapa !== f.i) estado = "Avanzó a " + ((ETAPAS.find(e=>e.id===reg.etapa)||{}).nombre || "—");
+                else estado = "Sigue aquí";
+              }
               return '<div class="pipe-det-row clickable" data-negid="' + reg.id + '" title="Ver todos los datos de este cliente">' +
                 '<div class="pipe-det-info"><b>' + reg.cliente + '</b>' +
-                '<span class="mini">' + (eq ? eq.nombre : "Sin dueño") + ' · ' + LBL[reg.cancha] + '</span></div>' +
+                '<span class="mini">' + (eq ? eq.nombre : "Sin dueño") + ' · ' + LBL[reg.cancha] + (estado ? ' · ' + estado : '') + '</span></div>' +
                 '<div class="mini">' + (reg.siguiente_paso || "sin siguiente paso") + (reg.notas ? ' — ' + reg.notas : '') + '</div></div>';
             }).join("")
           : '<p class="txt mini" style="font-style:italic;margin:0">No hay registros en esta etapa ahora mismo.</p>') +
@@ -1184,8 +1204,17 @@ function pintaEmbudo(){
 document.getElementById("embudo").addEventListener("click", function(e){
   const row = e.target.closest("[data-negid]");
   if (row) { abrir(row.dataset.negid, null); return; }
+  const modo = e.target.closest("[data-modo]");
+  if (modo) { embudoModoTodos = modo.dataset.modo === "todos"; pintaEmbudo(); return; }
   const fila = e.target.closest("[data-etapa]");
-  if (fila) { embudoAbierto = (embudoAbierto === +fila.dataset.etapa) ? null : +fila.dataset.etapa; pintaEmbudo(); }
+  if (fila) {
+    const i = +fila.dataset.etapa;
+    // si se abre una etapa distinta, siempre arranca en "en etapa ahora" -- la vista accionable
+    // por default; "pasaron por aquí" es algo que se elige a propósito para cada etapa.
+    if (embudoAbierto !== i) embudoModoTodos = false;
+    embudoAbierto = (embudoAbierto === i) ? null : i;
+    pintaEmbudo();
+  }
 });
 
 // ---------- captura ----------
