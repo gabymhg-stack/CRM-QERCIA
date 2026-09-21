@@ -114,8 +114,19 @@ h1{font-size:26px;font-weight:500;letter-spacing:-0.015em;line-height:1.15}
 .bd-alto{background:#FDF6E3;color:#8A5A0B}
 .bd-top{background:#EAF2FB;color:#1B3FE0}
 .pipe-f.vac{opacity:.5}
+.pipe-f{cursor:pointer}
+.pipe-f:hover{background:var(--papel-2)}
+.pipe-f.abierta{background:var(--papel-2);border-bottom-color:transparent}
+.pipe-detalle{padding:2px 6px 12px 6px;border-bottom:1px solid var(--linea);background:var(--papel-2)}
+.pipe-det-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:7px 8px;border-bottom:1px solid var(--linea);font-size:12.5px;cursor:pointer}
+.pipe-det-row:last-child{border-bottom:none}
+.pipe-det-row:hover .pipe-det-info b{text-decoration:underline}
+.pipe-det-row .pipe-det-info{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pipe-det-row .pipe-det-info b{font-size:13px;font-weight:500}
+.pipe-det-row .mini{font-size:11px;color:var(--tinta-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px}
 .pipe-nota{font-size:10.5px;color:var(--tinta-3);margin-top:9px;line-height:1.6;max-width:100ch}
 @media(max-width:1150px){.pipe-h{display:none}.pipe-f{grid-template-columns:1fr auto;gap:4px 10px}.pipe-f .b{grid-column:span 2}}
+@media(max-width:700px){.pipe-det-row{flex-direction:column;align-items:flex-start;gap:2px}.pipe-det-row .mini{max-width:100%;white-space:normal}}
 .acciones-hoy{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
 .ah-t{font-size:12px;color:var(--tinta-3);margin-right:2px}
 .ah{font-family:inherit;font-size:12.5px;padding:5px 11px;border:1px solid var(--linea-fuerte);background:transparent;color:var(--tinta-2);border-radius:2px}
@@ -682,6 +693,7 @@ let NEGS = [];
 let fCancha = "todas", verQuien = "todas", fSeguim = "todas", fHoyAsesor = "todos";
 let fLeadsAsesor = "todos", leadsSort = { campo: "estado", dir: 1 }, pendFlotAbierto = false;
 let fCanal = "todos", fRefPor = "todos", fPer = "todo", fD1 = "", fD2 = "";
+let embudoAbierto = null; // id de etapa del embudo con el desglose de registros abierto (null = ninguna)
 let abierto = {}; // columnas del Tablero con "ver las otras N" activado
 
 // ---------- periodo de entrada: usa creado_en, no fecha_asignacion (esa se resetea al reasignar) ----------
@@ -1108,16 +1120,16 @@ function pintaEmbudo(){
   const filas = [];
   for (let i = 0; i <= 8; i++) {
     const c = CAT[i];
-    const A = alc(i), n = A.length, cur = enEt(i).length;
+    const A = alc(i), n = A.length, EA = enEt(i), cur = EA.length;
     // una sola escala para las 9 etapas: el ancho es el % real contra el total de registros, no
     // contra la etapa anterior — así el embudo baja de mayor a menor de verdad, sin que Prospecto
     // "rebote" a un ancho grande solo porque cambió la base de cálculo.
     const bw = Math.max(n ? 1.5 : 0, Math.round(n / baseLead * 100));
     const cv = i > 0 && alc(i-1).length ? Math.round(n / alc(i-1).length * 100) : null;
-    const vp = valor(enEt(i)) * PROB[i] / 100;
+    const vp = valor(EA) * PROB[i] / 100;
     const d = dur(i), fu = perdEt(i);
     const et = ETAPAS.find(e=>e.id===i) || {};
-    filas.push({ i, c, n, cur, bw, cv, vp, d, fu, et });
+    filas.push({ i, c, n, cur, EA, bw, cv, vp, d, fu, et });
   }
   let catPrev = "";
   filas.forEach(function(f){
@@ -1128,7 +1140,10 @@ function pintaEmbudo(){
     // barra recta, pegada a la izquierda: nada de cono ni degradado de forma — el ancho es
     // directamente el % real contra el total de registros (mismo número que "% desde registro"),
     // y el grosor (alto de la barra) es el mismo para las 9 etapas, tengan 0 o 79 casos.
-    h += '<div class="pipe-f c-' + f.c + (f.n ? '' : ' vac') + '">' +
+    // clickeable: abre abajo el desglose de quién tiene los registros que están AHORA en esta
+    // etapa (mismo universo que la columna "En etapa"), con dueño, cancha y siguiente paso —
+    // así no hay que ir a buscarlos uno por uno en el Tablero o en Mis leads.
+    h += '<div class="pipe-f c-' + f.c + (f.n ? '' : ' vac') + (embudoAbierto === f.i ? ' abierta' : '') + '" data-etapa="' + f.i + '">' +
       '<span class="e"><b>' + (f.et.nombre || "—") + '</b><em>' + (f.et.meta || "") + '</em></span>' +
       '<span class="b"><i style="width:' + f.bw + '%;background:' + ETCOLOR[f.i] + '"></i><u>' + f.n + '</u></span>' +
       '<span class="r n">' + (f.cur || '·') + '</span>' +
@@ -1138,6 +1153,19 @@ function pintaEmbudo(){
       '<span class="r n">' + (f.cur && PROB[f.i] ? '$' + mdp(f.vp) : '·') + '</span>' +
       '<span class="r n">' + (f.d === null ? '·' : f.d) + '</span>' +
       '<span class="r f" style="color:var(--nuestra)">' + (f.fu ? f.fu : '') + '</span></div>';
+    if (embudoAbierto === f.i) {
+      h += '<div class="pipe-detalle">' +
+        (f.EA.length
+          ? f.EA.map(function(reg){
+              const eq = eqById(reg.asesor_id);
+              return '<div class="pipe-det-row clickable" data-negid="' + reg.id + '" title="Ver todos los datos de este cliente">' +
+                '<div class="pipe-det-info"><b>' + reg.cliente + '</b>' +
+                '<span class="mini">' + (eq ? eq.nombre : "Sin dueño") + ' · ' + LBL[reg.cancha] + '</span></div>' +
+                '<div class="mini">' + (reg.siguiente_paso || "sin siguiente paso") + (reg.notas ? ' — ' + reg.notas : '') + '</div></div>';
+            }).join("")
+          : '<p class="txt mini" style="font-style:italic;margin:0">No hay registros en esta etapa ahora mismo.</p>') +
+        '</div>';
+    }
   });
   h += '<div class="pipe-nota">Ponderado = ticket × probabilidad de la etapa. Las negociaciones sin lote se valúan al ticket promedio del inventario, $' + mdp(TICKET_PROM) + ' MDP, y se corrigen solas en cuanto se les asigna lote.</div>';
   h += '<div class="pipe-nota"><b>De dónde salen las bandas "sano".</b> Registro → calificado usa ' +
@@ -1153,6 +1181,12 @@ function pintaEmbudo(){
   h += '</div>';
   document.getElementById("embudo").innerHTML = h;
 }
+document.getElementById("embudo").addEventListener("click", function(e){
+  const row = e.target.closest("[data-negid]");
+  if (row) { abrir(row.dataset.negid, null); return; }
+  const fila = e.target.closest("[data-etapa]");
+  if (fila) { embudoAbierto = (embudoAbierto === +fila.dataset.etapa) ? null : +fila.dataset.etapa; pintaEmbudo(); }
+});
 
 // ---------- captura ----------
 document.getElementById("b-guardar").addEventListener("click", async function(){
